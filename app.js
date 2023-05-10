@@ -130,7 +130,20 @@ function loadGraph() {
   input.click();
 }
 
-
+function calculateAdaptiveFontSize(radius, name) {
+  const maxFontSize = 24;
+  const maxNameWidth = radius * 2 * 0.7;
+  let fontSize = maxFontSize;
+  while (fontSize > 1) {
+    ctx.font = `${fontSize}px Arial`;
+    const nameWidth = ctx.measureText(name).width;
+    if (nameWidth <= maxNameWidth) {
+      break;
+    }
+    fontSize -= 1;
+  }
+  return fontSize;
+}
 
 
 class Circle {
@@ -157,15 +170,22 @@ class Circle {
     ctx.lineWidth = this.strokeWidth;
     ctx.strokeStyle = this.strokeColor;
     ctx.stroke();
-
+    this.drawCircleName();
+  }
+  setColor(color) {
+    this.fillColor = color;
+  }
+  drawCircleName() {
     if (this.name) {
-      ctx.font = '24px Arial';
+      const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
+      ctx.font = `${fontSize}px Arial`;
       ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(this.name, this.x, this.y);
     }
   }
+  
 }
 
 
@@ -393,6 +413,28 @@ document.addEventListener('keydown', (event) => {
     deleteConnectionsForCircle(hoveredCircle);
     actionsHistory.push({ type: 'removeCircle', circle: hoveredCircle });
     hoveredCircle = null;
+  }
+});
+
+canvas.addEventListener('click', (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  if (event.shiftKey) {
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= circle.radius) {
+        const color = prompt('Enter a new color for the circle:', circle.fillColor);
+        if (color !== null) {
+          circle.setColor(color);
+        }
+        break;
+      }
+    }
   }
 });
 

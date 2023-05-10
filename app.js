@@ -1,8 +1,16 @@
 const canvas = document.getElementById('forceFieldGraph');
 const ctx = canvas.getContext('2d');
 
-canvas.width = 1080;
-canvas.height = 1080;
+// Set canvas size to window size
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Resize canvas when window size changes
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
 const actionsHistory = [];
 let hoveredCircle = null;
 

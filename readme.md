@@ -5,8 +5,10 @@ This is a web app that allows you to create an interactive force field graph. Th
 
 ## Getting Started
 
-To get started with the app, follow these steps:
+available on https://fimenten.github.io/graph_2/
 
+
+To get started with the app, follow these steps:
 1. Clone the repository to your local machine or download the ZIP file and extract it.
 2. Open the `index.html` file in your web browser.
 3. The program will run in the browser and you can interact with the graph by clicking and dragging circles, creating connections between circles, and renaming circles.

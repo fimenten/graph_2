@@ -12,4 +12,8 @@ body {
     /* width: 800px; */
     /* height: 600px; */
   }
+  button {
+    display: block;
+    margin-bottom: 20px;
+  }
   

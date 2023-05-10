@@ -2,12 +2,12 @@ const canvas = document.getElementById('forceFieldGraph');
 const ctx = canvas.getContext('2d');
 
 // Set canvas size to window size
-canvas.width = window.innerWidth;
+canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
 
 // Resize canvas when window size changes
 window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
+  canvas.width = window.innerWidth- 100;
   canvas.height = window.innerHeight;
 });
 
@@ -81,6 +81,55 @@ function deleteConnectionIfConnected(circleA, circleB) {
 
   return false;
 }
+function saveGraph() {
+  const data = {
+    circles: circles,
+    connections: connections
+  };
+  const jsonData = JSON.stringify(data);
+  const blob = new Blob([jsonData], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.download = 'graph.json';
+  link.href = url;
+  link.click();
+}
+
+function loadGraph() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.readAsText(file);
+
+    reader.addEventListener('load', () => {
+      const data = JSON.parse(reader.result);
+
+      circles.length = 0;
+      connections.length = 0;
+
+      for (const circleData of data.circles) {
+        const circle = new Circle(circleData.x, circleData.y, circleData.radius, circleData.fillColor, circleData.strokeColor, circleData.strokeWidth);
+        circle.name = circleData.name;
+        circles.push(circle);
+      }
+
+      for (const connectionData of data.connections) {
+        const circleA = circles.find(circle => circle.name === connectionData.circleA.name);
+        const circleB = circles.find(circle => circle.name === connectionData.circleB.name);
+        const connection = new Connection(circleA, circleB, connectionData.k);
+        connections.push(connection);
+      }
+    });
+  });
+
+  input.click();
+}
+
 
 
 
@@ -93,10 +142,10 @@ class Circle {
     this.strokeColor = strokeColor;
     this.strokeWidth = strokeWidth;
     this.name = '';
-    const name = prompt('Enter a name for the circle:', this.name);
-    if (name !== null) {
-      this.name = name;
-    }
+    // const name = prompt('Enter a name for the circle:', this.name);
+    // if (name !== null) {
+    //   this.name = name;
+    // }
   }
 
   draw() {
@@ -171,6 +220,10 @@ canvas.addEventListener('mousedown', (event) => {
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
     const circle = new Circle(mouseX, mouseY);
+    const name = prompt('Enter a name for the circle:', circle.name);
+    if (name !== null) {
+      circle.name = name;
+    }
     circles.push(circle);
     actionsHistory.push({ type: 'addCircle', circle });
 

@@ -27,7 +27,7 @@ To rename a circle, right-click on it and enter a new name in the prompt. The ci
 
 ### Creating Connections
 
-To create a connection between two circles, left-click and drag from one circle to another. When you release the mouse button, a connection will be created between the two circles. The connection will apply a force that pulls the circles towards each other. You can adjust the spring constant and rest length of the connection by modifying the `k` and `restLength` properties in the `Connection` class.
+To create a connection between two circles, double-click and drag from one circle to another. When you release the mouse button, a connection will be created between the two circles. The connection will apply a force that pulls the circles towards each other. You can adjust the spring constant and rest length of the connection by modifying the `k` and `restLength` properties in the `Connection` class.
 
 ### Deleting Circles and Connections
 

@@ -4,12 +4,18 @@ const ctx = canvas.getContext('2d');
 // Set canvas size to window size
 canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
+let smaller_edge = Math.min(canvas.width,canvas.height)
 
 // Resize canvas when window size changes
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth- 100;
   canvas.height = window.innerHeight;
+  smaller_edge = Math.min(canvas.width,canvas.height)
+  // console.log(smaller_edge)
 });
+
+
+
 
 const actionsHistory = [];
 let hoveredCircle = null;
@@ -131,7 +137,7 @@ function loadGraph() {
 }
 
 function calculateAdaptiveFontSize(radius, name) {
-  const maxFontSize = 24;
+  const maxFontSize = smaller_edge/20/2;
   const maxNameWidth = radius * 2 * 0.7;
   let fontSize = maxFontSize;
   while (fontSize > 1) {
@@ -147,9 +153,10 @@ function calculateAdaptiveFontSize(radius, name) {
 
 
 class Circle {
-  constructor(x, y, radius = 50, fillColor = 'blue', strokeColor = 'black', strokeWidth = 2) {
+  constructor(x, y, radius = smaller_edge/20, fillColor = 'blue', strokeColor = 'black', strokeWidth = 2) {
     this.x = x;
     this.y = y;
+    console.log(radius)
     this.radius = radius;
     this.fillColor = fillColor;
     this.strokeColor = strokeColor;
@@ -195,7 +202,7 @@ class Connection {
     this.circleB = circleB;
     this.k = k;
     // this.restLength = this.distanceBetween(circleA, circleB);
-    this.restLength = circleA.radius * 3;
+    this.restLength = (circleA.radius + circleB.radius)/2 * 3;
 
   }
 

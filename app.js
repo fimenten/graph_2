@@ -482,6 +482,36 @@ canvas.addEventListener('click', (event) => {
     }
   }
 });
+// Function to load the graph data from local storage
+function loadGraphFromLocalStorage() {
+  const jsonData = localStorage.getItem('graphData');
+  if (jsonData) {
+    const data = JSON.parse(jsonData);
+
+    circles.length = 0;
+    connections.length = 0;
+
+    for (const circleData of data.circles) {
+      const circle = new Circle(
+        circleData.x,
+        circleData.y,
+        circleData.radius,
+        circleData.fillColor,
+        circleData.strokeColor,
+        circleData.strokeWidth
+      );
+      circle.name = circleData.name;
+      circles.push(circle);
+    }
+
+    for (const connectionData of data.connections) {
+      const circleA = circles.find((circle) => circle.name === connectionData.circleA.name);
+      const circleB = circles.find((circle) => circle.name === connectionData.circleB.name);
+      const connection = new Connection(circleA, circleB, connectionData.k);
+      connections.push(connection);
+    }
+  }
+}
 
 
 
@@ -501,6 +531,9 @@ function animate() {
 
   requestAnimationFrame(animate);
 }
+window.onload = () => {
+  loadGraphFromLocalStorage();
+};
 
 
 animate();

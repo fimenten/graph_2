@@ -4,17 +4,61 @@ const ctx = canvas.getContext('2d');
 // Set canvas size to window size
 canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
+let smaller_edge = Math.min(canvas.width,canvas.height)
 
 // Resize canvas when window size changes
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth- 100;
   canvas.height = window.innerHeight;
+  smaller_edge = Math.min(canvas.width,canvas.height)
+  // console.log(smaller_edge)
 });
+
 
 const actionsHistory = [];
 let hoveredCircle = null;
 
+function generateRandomCircles() {
+  for (const circle of circles) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    circle.x = x;
+    circle.y = y;
+  }
+}
+// Function to save the graph data to local storage
+function saveGraphToLocalStorage() {
+  const data = {
+    circles: circles,
+    connections: connections
+  };
+  const jsonData = JSON.stringify(data);
+  localStorage.setItem('graphData', jsonData);
+}
 
+// Function to load the graph data from local storage
+function loadGraphFromLocalStorage() {
+  const jsonData = localStorage.getItem('graphData');
+  if (jsonData) {
+    const data = JSON.parse(jsonData);
+
+    circles.length = 0;
+    connections.length = 0;
+
+    for (const circleData of data.circles) {
+      const circle = new Circle(circleData.x, circleData.y, circleData.radius, circleData.fillColor, circleData.strokeColor, circleData.strokeWidth);
+      circle.name = circleData.name;
+      circles.push(circle);
+    }
+
+    for (const connectionData of data.connections) {
+      const circleA = circles.find(circle => circle.name === connectionData.circleA.name);
+      const circleB = circles.find(circle => circle.name === connectionData.circleB.name);
+      const connection = new Connection(circleA, circleB, connectionData.k);
+      connections.push(connection);
+    }
+  }
+}
 
 
 function deleteConnectionsForCircle(circle) {
@@ -131,7 +175,7 @@ function loadGraph() {
 }
 
 function calculateAdaptiveFontSize(radius, name) {
-  const maxFontSize = 24;
+  const maxFontSize = smaller_edge/20/2;
   const maxNameWidth = radius * 2 * 0.7;
   let fontSize = maxFontSize;
   while (fontSize > 1) {
@@ -147,9 +191,10 @@ function calculateAdaptiveFontSize(radius, name) {
 
 
 class Circle {
-  constructor(x, y, radius = 50, fillColor = 'blue', strokeColor = 'black', strokeWidth = 2) {
+  constructor(x, y, radius = smaller_edge/20, fillColor = 'blue', strokeColor = 'black', strokeWidth = 2) {
     this.x = x;
     this.y = y;
+    console.log(radius)
     this.radius = radius;
     this.fillColor = fillColor;
     this.strokeColor = strokeColor;
@@ -195,7 +240,7 @@ class Connection {
     this.circleB = circleB;
     this.k = k;
     // this.restLength = this.distanceBetween(circleA, circleB);
-    this.restLength = circleA.radius * 3;
+    this.restLength = (circleA.radius + circleB.radius)/2 * 3;
 
   }
 
@@ -459,3 +504,4 @@ function animate() {
 
 
 animate();
+setInterval(saveGraphToLocalStorage, 1000);

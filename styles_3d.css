@@ -1,0 +1,37 @@
+#3d-graph {
+    height: 80vh;
+  }
+  
+  .node {
+    fill: #fff;
+    stroke: #000;
+    stroke-width: 1px;
+    cursor: pointer;
+  }
+  
+  .link {
+    stroke: #ccc;
+    stroke-width: 1px;
+    opacity: 0.6;
+  }
+  
+  .link--highlighted {
+    stroke: steelblue;
+    opacity: 1;
+  }
+  
+  .link--selected {
+    stroke: steelblue;
+    opacity: 1;
+  }
+  
+  .node--highlighted {
+    stroke: steelblue;
+    stroke-width: 2px;
+  }
+  
+  .node--selected {
+    stroke: steelblue;
+    stroke-width: 2px;
+  }
+  

@@ -96,6 +96,43 @@ function handleCollisions() {
     }
   }
 }
+function calculateElectrostaticForceAndMove() {
+  // const circles = []; // Array of circles with positions and radii
+  const charge = 1.0; // Charge of each circle
+
+  const k = 10000; // Electrostatic constant (N m^2/C^2)
+
+  for (let i = 0; i < circles.length; i++) {
+    let totalForceX = 0;
+    let totalForceY = 0;
+
+    const circleA = circles[i];
+
+    for (let j = 0; j < circles.length; j++) {
+      if (i === j) continue; // Skip calculating force for the same circle
+
+      const circleB = circles[j];
+
+      const dx = circleB.x - circleA.x;
+      const dy = circleB.y - circleA.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      const forceMagnitude = -(k * charge * charge) / (distance * distance);
+      const angle = Math.atan2(dy, dx);
+
+      const forceX = forceMagnitude * Math.cos(angle);
+      const forceY = forceMagnitude * Math.sin(angle);
+
+      totalForceX += forceX;
+      totalForceY += forceY;
+    }
+
+    // Update circle position based on the total force
+    circleA.x += totalForceX;
+    circleA.y += totalForceY;
+  }
+}
+
 
 function areCirclesConnected(circleA, circleB) {
   for (const connection of connections) {
@@ -274,10 +311,22 @@ class Connection {
   }
 }
 
-const circles = [];
-const connections = [];
+let circles = [];
+let connections = [];
 let draggingCircle = null;
 let draggingCircle_db = null;
+
+function resetCanvas(){
+  const confirmation = window.confirm("Do you really want to reset the canvas?");
+  if (confirmation) {
+    // Call the function
+    circles = []
+    connections = []
+  }
+
+}
+
+
 
 canvas.addEventListener('mousedown', (event) => {
   if (event.ctrlKey) {
@@ -528,7 +577,7 @@ function animate() {
   }
 
   handleCollisions();
-
+  calculateElectrostaticForceAndMove()
   requestAnimationFrame(animate);
 }
 window.onload = () => {

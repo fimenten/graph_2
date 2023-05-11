@@ -15,12 +15,50 @@ window.addEventListener('resize', () => {
 });
 
 
-
-
 const actionsHistory = [];
 let hoveredCircle = null;
 
+function generateRandomCircles() {
+  for (const circle of circles) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    circle.x = x;
+    circle.y = y;
+  }
+}
+// Function to save the graph data to local storage
+function saveGraphToLocalStorage() {
+  const data = {
+    circles: circles,
+    connections: connections
+  };
+  const jsonData = JSON.stringify(data);
+  localStorage.setItem('graphData', jsonData);
+}
 
+// Function to load the graph data from local storage
+function loadGraphFromLocalStorage() {
+  const jsonData = localStorage.getItem('graphData');
+  if (jsonData) {
+    const data = JSON.parse(jsonData);
+
+    circles.length = 0;
+    connections.length = 0;
+
+    for (const circleData of data.circles) {
+      const circle = new Circle(circleData.x, circleData.y, circleData.radius, circleData.fillColor, circleData.strokeColor, circleData.strokeWidth);
+      circle.name = circleData.name;
+      circles.push(circle);
+    }
+
+    for (const connectionData of data.connections) {
+      const circleA = circles.find(circle => circle.name === connectionData.circleA.name);
+      const circleB = circles.find(circle => circle.name === connectionData.circleB.name);
+      const connection = new Connection(circleA, circleB, connectionData.k);
+      connections.push(connection);
+    }
+  }
+}
 
 
 function deleteConnectionsForCircle(circle) {
@@ -466,3 +504,4 @@ function animate() {
 
 
 animate();
+setInterval(saveGraphToLocalStorage, 1000);

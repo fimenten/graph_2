@@ -8,13 +8,17 @@
 </head>
 <body>
   <canvas id="forceFieldGraph"></canvas>
-  <script src="app.js"></script>
   <div class="button-container">
+  <label for="k-input">Electrostatic Constant (k): </label>
+  <input type="number" id="k-input" value="10000" />
+  <label for="k-input-spring">Spring Constant (k): </label>
+  <input type="number" id="k-input-spring" value="0.01" />
   <button onclick="resetCanvas()">resetCanvas</button>
   <button onclick="saveGraph()">Save Graph</button>
   <button onclick="loadGraph()">Load Graph</button>
   <button onclick="generateRandomCircles() ">Place Random Circle</button>
   <a href="3d.html" class="turn-into-3d-btn">Turn into 3D</a>
+  <script src="app.js"></script>
 
 </div>
 

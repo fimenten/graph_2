@@ -100,7 +100,8 @@ function calculateElectrostaticForceAndMove() {
   // const circles = []; // Array of circles with positions and radii
   const charge = 1.0; // Charge of each circle
 
-  const k = 10000; // Electrostatic constant (N m^2/C^2)
+  const kInput = document.getElementById('k-input');
+  const k = parseFloat(kInput.value); // Read the value of k from the input element
 
   for (let i = 0; i < circles.length; i++) {
     let totalForceX = 0;
@@ -295,8 +296,10 @@ class Connection {
   }
 
   applyForces() {
+    const kInput = document.getElementById('k-input-spring');
+    const k = parseFloat(kInput.value); // Read the value of k from the input element
     const distance = this.distanceBetween(this.circleA, this.circleB);
-    const force = this.k * (distance - this.restLength);
+    const force = k * (distance - this.restLength);
 
     const dx = this.circleB.x - this.circleA.x;
     const dy = this.circleB.y - this.circleA.y;

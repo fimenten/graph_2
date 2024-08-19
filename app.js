@@ -531,6 +531,101 @@ canvas.addEventListener('click', (event) => {
     }
   }
 });
+
+// Existing canvas variable
+
+// Add mobile event listeners
+canvas.addEventListener('touchstart', handleTouchStart, false);
+canvas.addEventListener('touchmove', handleTouchMove, false);
+canvas.addEventListener('touchend', handleTouchEnd, false);
+
+let touchTimer = null;
+let contextMenuTimer = null;
+
+// Convert touch events to mouse events
+function getTouchPos(canvas, touchEvent) {
+  const rect = canvas.getBoundingClientRect();
+  const touch = touchEvent.touches[0];
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
+
+// Handle touch start
+function handleTouchStart(event) {
+  event.preventDefault();
+  const pos = getTouchPos(canvas, event);
+  const mouseEvent = new MouseEvent('mousedown', {
+    clientX: pos.x,
+    clientY: pos.y
+  });
+  canvas.dispatchEvent(mouseEvent);
+
+  // Start timer for long press to trigger delete
+  touchTimer = setTimeout(() => {
+    if (hoveredCircle) {
+      // Cancel context menu if delete is triggered
+      clearTimeout(contextMenuTimer);
+      const index = circles.indexOf(hoveredCircle);
+      circles.splice(index, 1);
+      deleteConnectionsForCircle(hoveredCircle);
+      actionsHistory.push({ type: 'removeCircle', circle: hoveredCircle });
+      hoveredCircle = null;
+    }
+  }, 700);  // Shorter long press duration for delete (700ms)
+
+  // Start timer for long press to trigger context menu
+  contextMenuTimer = setTimeout(() => {
+    if (!hoveredCircle) return; // Do not open context menu if circle was deleted
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = pos.x;
+    const mouseY = pos.y;
+
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= circle.radius) {
+        const name = prompt('Enter a name for the circle:', circle.name);
+        if (name !== null) {
+          circle.name = name;
+        }
+        break;
+      }
+    }
+  }, 1000);  // Longer long press duration for context menu (1000ms)
+}
+
+// Handle touch move
+function handleTouchMove(event) {
+  event.preventDefault();
+  clearTimeout(touchTimer);  // Clear the timer if the user moves their finger
+  clearTimeout(contextMenuTimer);  // Clear the timer if the user moves their finger
+  const pos = getTouchPos(canvas, event);
+  const mouseEvent = new MouseEvent('mousemove', {
+    clientX: pos.x,
+    clientY: pos.y
+  });
+  canvas.dispatchEvent(mouseEvent);
+}
+
+// Handle touch end
+function handleTouchEnd(event) {
+  event.preventDefault();
+  clearTimeout(touchTimer); // Clear the timer if the touch ends before the threshold
+  clearTimeout(contextMenuTimer); // Clear the timer if the touch ends before the threshold
+  const mouseEvent = new MouseEvent('mouseup', {});
+  canvas.dispatchEvent(mouseEvent);
+}
+
+
+
+
+
+
+
 // Function to load the graph data from local storage
 function loadGraphFromLocalStorage() {
   const jsonData = localStorage.getItem('graphData');

@@ -1,19 +1,18 @@
-const canvas = document.getElementById('forceFieldGraph');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("forceFieldGraph");
+const ctx = canvas.getContext("2d");
 
 // Set canvas size to window size
 canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
-let smaller_edge = Math.min(canvas.width,canvas.height)
+let smaller_edge = Math.min(canvas.width, canvas.height);
 
 // Resize canvas when window size changes
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth- 100;
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth - 100;
   canvas.height = window.innerHeight;
-  smaller_edge = Math.min(canvas.width,canvas.height)
+  smaller_edge = Math.min(canvas.width, canvas.height);
   // console.log(smaller_edge)
 });
-
 
 const actionsHistory = [];
 let hoveredCircle = null;
@@ -30,15 +29,15 @@ function generateRandomCircles() {
 function saveGraphToLocalStorage() {
   const data = {
     circles: circles,
-    connections: connections
+    connections: connections,
   };
   const jsonData = JSON.stringify(data);
-  localStorage.setItem('graphData', jsonData);
+  localStorage.setItem("graphData", jsonData);
 }
 
 // Function to load the graph data from local storage
 function loadGraphFromLocalStorage() {
-  const jsonData = localStorage.getItem('graphData');
+  const jsonData = localStorage.getItem("graphData");
   if (jsonData) {
     const data = JSON.parse(jsonData);
 
@@ -46,27 +45,39 @@ function loadGraphFromLocalStorage() {
     connections.length = 0;
 
     for (const circleData of data.circles) {
-      const circle = new Circle(circleData.x, circleData.y, circleData.radius, circleData.fillColor, circleData.strokeColor, circleData.strokeWidth);
+      const circle = new Circle(
+        circleData.x,
+        circleData.y,
+        name = circleData.name,
+        id = circleData.id,
+        circleData.radius,
+        circleData.fillColor,
+        circleData.strokeColor,
+        circleData.strokeWidth
+      );
       circle.name = circleData.name;
       circles.push(circle);
     }
 
     for (const connectionData of data.connections) {
-      const circleA = circles.find(circle => circle.name === connectionData.circleA.name);
-      const circleB = circles.find(circle => circle.name === connectionData.circleB.name);
+      const circleA = circles.find(
+        (circle) => circle.id === connectionData.circleA.id
+      );
+      const circleB = circles.find(
+        (circle) => circle.id === connectionData.circleB.id
+      );
       const connection = new Connection(circleA, circleB, connectionData.k);
       connections.push(connection);
     }
   }
 }
 
-
 function deleteConnectionsForCircle(circle) {
   for (let i = connections.length - 1; i >= 0; i--) {
     const connection = connections[i];
     if (connection.circleA === circle || connection.circleB === circle) {
       connections.splice(i, 1);
-      actionsHistory.push({ type: 'removeConnection', connection });
+      actionsHistory.push({ type: "removeConnection", connection });
     }
   }
 }
@@ -96,49 +107,13 @@ function handleCollisions() {
     }
   }
 }
-function calculateElectrostaticForceAndMove() {
-  // const circles = []; // Array of circles with positions and radii
-  const charge = 1.0; // Charge of each circle
-
-  const k = 10000; // Electrostatic constant (N m^2/C^2)
-
-  for (let i = 0; i < circles.length; i++) {
-    let totalForceX = 0;
-    let totalForceY = 0;
-
-    const circleA = circles[i];
-
-    for (let j = 0; j < circles.length; j++) {
-      if (i === j) continue; // Skip calculating force for the same circle
-
-      const circleB = circles[j];
-
-      const dx = circleB.x - circleA.x;
-      const dy = circleB.y - circleA.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      const forceMagnitude = -(k * charge * charge) / (distance * distance);
-      const angle = Math.atan2(dy, dx);
-
-      const forceX = forceMagnitude * Math.cos(angle);
-      const forceY = forceMagnitude * Math.sin(angle);
-
-      totalForceX += forceX;
-      totalForceY += forceY;
-    }
-
-    // Update circle position based on the total force
-    circleA.x += totalForceX;
-    circleA.y += totalForceY;
-  }
-}
-
 
 function areCirclesConnected(circleA, circleB) {
   for (const connection of connections) {
     if (
-      (connection.circleA === circleA && connection.circleB === circleB) ||
-      (connection.circleA === circleB && connection.circleB === circleA)
+      (connection.circleA === circleA && connection.circleB === circleB) 
+      // ||
+      // (connection.circleA === circleB && connection.circleB === circleA)
     ) {
       return true;
     }
@@ -155,7 +130,7 @@ function deleteConnectionIfConnected(circleA, circleB) {
       (connection.circleA === circleB && connection.circleB === circleA)
     ) {
       connections.splice(i, 1);
-      actionsHistory.push({ type: 'removeConnection', connection });
+      actionsHistory.push({ type: "removeConnection", connection });
       return true;
     }
   }
@@ -165,43 +140,55 @@ function deleteConnectionIfConnected(circleA, circleB) {
 function saveGraph() {
   const data = {
     circles: circles,
-    connections: connections
+    connections: connections,
   };
   const jsonData = JSON.stringify(data);
-  const blob = new Blob([jsonData], {type: 'application/json'});
+  const blob = new Blob([jsonData], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
-  link.download = 'graph.json';
+  const link = document.createElement("a");
+  link.download = "graph.json";
   link.href = url;
   link.click();
 }
 
 function loadGraph() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/json';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
 
-  input.addEventListener('change', () => {
+  input.addEventListener("change", () => {
     const file = input.files[0];
     const reader = new FileReader();
     reader.readAsText(file);
 
-    reader.addEventListener('load', () => {
+    reader.addEventListener("load", () => {
       const data = JSON.parse(reader.result);
 
       circles.length = 0;
       connections.length = 0;
 
       for (const circleData of data.circles) {
-        const circle = new Circle(circleData.x, circleData.y, circleData.radius, circleData.fillColor, circleData.strokeColor, circleData.strokeWidth);
-        circle.name = circleData.name;
+        const circle = new Circle(
+          circleData.x,
+          circleData.y,
+          circleData.name,
+          circleData.id,
+          circleData.radius,
+          circleData.fillColor,
+          circleData.strokeColor,
+          circleData.strokeWidth
+        );
         circles.push(circle);
       }
 
       for (const connectionData of data.connections) {
-        const circleA = circles.find(circle => circle.name === connectionData.circleA.name);
-        const circleB = circles.find(circle => circle.name === connectionData.circleB.name);
+        const circleA = circles.find(
+          (circle) => circle.id === connectionData.circleA.id
+        );
+        const circleB = circles.find(
+          (circle) => circle.id === connectionData.circleB.id
+        );
         const connection = new Connection(circleA, circleB, connectionData.k);
         connections.push(connection);
       }
@@ -212,7 +199,7 @@ function loadGraph() {
 }
 
 function calculateAdaptiveFontSize(radius, name) {
-  const maxFontSize = smaller_edge/20/2;
+  const maxFontSize = smaller_edge / 20 / 2;
   const maxNameWidth = radius * 2 * 0.7;
   let fontSize = maxFontSize;
   while (fontSize > 1) {
@@ -226,17 +213,27 @@ function calculateAdaptiveFontSize(radius, name) {
   return fontSize;
 }
 
-
 class Circle {
-  constructor(x, y, radius = smaller_edge/20, fillColor = 'blue', strokeColor = 'black', strokeWidth = 2) {
+  constructor(
+    x,
+    y,
+    name = "",
+    id = "",
+    radius = smaller_edge / 20,
+    fillColor = "blue",
+    strokeColor = "black",
+    strokeWidth = 2
+
+  ) {
     this.x = x;
     this.y = y;
-    console.log(radius)
+    console.log(radius);
     this.radius = radius;
     this.fillColor = fillColor;
     this.strokeColor = strokeColor;
     this.strokeWidth = strokeWidth;
-    this.name = '';
+    this.name = name;
+    this.id = id
     // const name = prompt('Enter a name for the circle:', this.name);
     // if (name !== null) {
     //   this.name = name;
@@ -261,15 +258,13 @@ class Circle {
     if (this.name) {
       const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
       ctx.font = `${fontSize}px Arial`;
-      ctx.fillStyle = 'white';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(this.name, this.x, this.y);
     }
   }
-  
 }
-
 
 class Connection {
   constructor(circleA, circleB, k = 0.01) {
@@ -277,21 +272,42 @@ class Connection {
     this.circleB = circleB;
     this.k = k;
     // this.restLength = this.distanceBetween(circleA, circleB);
-    this.restLength = (circleA.radius + circleB.radius)/2 * 3;
-
+    this.restLength = ((circleA.radius + circleB.radius) / 2) * 3;
   }
 
   draw() {
+    const arrowSize = 10; // Size of the arrowhead
+    const angle = Math.atan2(
+      this.circleB.y - this.circleA.y,
+      this.circleB.x - this.circleA.x
+    );
+
+    // Draw the line
     ctx.beginPath();
     ctx.moveTo(this.circleA.x, this.circleA.y);
     ctx.lineTo(this.circleB.x, this.circleB.y);
-    ctx.closePath();
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = "#000";
+    ctx.stroke();
+
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(
+      this.circleB.x - arrowSize * Math.cos(angle - Math.PI / 6),
+      this.circleB.y - arrowSize * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(this.circleB.x, this.circleB.y);
+    ctx.lineTo(
+      this.circleB.x - arrowSize * Math.cos(angle + Math.PI / 6),
+      this.circleB.y - arrowSize * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.strokeStyle = "#000";
     ctx.stroke();
   }
 
   distanceBetween(circleA, circleB) {
-    return Math.sqrt((circleB.x - circleA.x) ** 2 + (circleB.y - circleA.y) ** 2);
+    return Math.sqrt(
+      (circleB.x - circleA.x) ** 2 + (circleB.y - circleA.y) ** 2
+    );
   }
 
   applyForces() {
@@ -311,59 +327,45 @@ class Connection {
   }
 }
 
+
 let circles = [];
 let connections = [];
 let draggingCircle = null;
 let draggingCircle_db = null;
 
-function resetCanvas(){
-  const confirmation = window.confirm("Do you really want to reset the canvas?");
+function resetCanvas() {
+  const confirmation = window.confirm(
+    "Do you really want to reset the canvas?"
+  );
   if (confirmation) {
     // Call the function
-    circles = []
-    connections = []
+    circles = [];
+    connections = [];
   }
-
 }
 
+canvas.addEventListener("mousedown", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+  {
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-
-canvas.addEventListener('mousedown', (event) => {
-  if (event.ctrlKey) {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    const circle = new Circle(mouseX, mouseY);
-    const name = prompt('Enter a name for the circle:', circle.name);
-    if (name !== null) {
-      circle.name = name;
-    }
-    circles.push(circle);
-    actionsHistory.push({ type: 'addCircle', circle });
-
-  }else {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    {
-      for (const circle of circles) {
-        const dx = mouseX - circle.x;
-        const dy = mouseY - circle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance <= circle.radius) {
-          draggingCircle = circle;
-          if (draggingCircle_db){
-            draggingCircle = null
-          }
-          break;
+      if (distance <= circle.radius) {
+        draggingCircle = circle;
+        if (draggingCircle_db) {
+          draggingCircle = null;
         }
+        break;
       }
     }
-}
+  }
 });
 
-canvas.addEventListener('contextmenu', (event) => {
+canvas.addEventListener("contextmenu", (event) => {
   event.preventDefault(); // Prevent the default right-click menu from appearing
 
   const rect = canvas.getBoundingClientRect();
@@ -376,7 +378,7 @@ canvas.addEventListener('contextmenu', (event) => {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance <= circle.radius) {
-      const name = prompt('Enter a name for the circle:', circle.name);
+      const name = prompt("Enter a name for the circle:", circle.name);
       if (name !== null) {
         circle.name = name;
       }
@@ -385,55 +387,87 @@ canvas.addEventListener('contextmenu', (event) => {
   }
 });
 
-
-
-
-
-
-canvas.addEventListener('dblclick', (event) => {
-
-  if (draggingCircle || draggingCircle_db){
-    draggingCircle = null;
-    draggingCircle_db = null;
-  }
-  else
-  {
-
-
+canvas.addEventListener("click", (event) => {
+  event.preventDefault()
+  event.stopPropagation()
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
 
-  for (const circle of circles) {
-    const dx = mouseX - circle.x;
-    const dy = mouseY - circle.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+  if (event.shiftKey) {
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance <= circle.radius) {
-      draggingCircle_db = circle;
-      draggingCircle = null
-      console.log("testt")
-      break;
+      if (distance <= circle.radius) {
+        const color = prompt(
+          "Enter a new color for the circle:",
+          circle.fillColor
+        );
+        if (color !== null) {
+          circle.setColor(color);
+        }
+        break;
+      }
     }
   }
-}
 });
 
+canvas.addEventListener("dblclick", (event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  if (draggingCircle || draggingCircle_db) {
+    draggingCircle = null;
+    draggingCircle_db = null;
+  } else {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    let any = false
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-canvas.addEventListener('mousemove', (event) => {
+      if (distance <= circle.radius) {
+        draggingCircle_db = circle;
+        draggingCircle = null;
+        console.log("testt");
+        any = true
+        break;
+      }
+    }
+    if (!any){
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      const circle = new Circle(mouseX, mouseY,"",Date.now());
+      const name = prompt('Enter a name for the circle:', circle.name);
+      if (name !== null) {
+        circle.name = name;
+      }
+      circles.push(circle);
+      actionsHistory.push({ type: 'addCircle', circle });
+  
+    }
+  }
+});
+
+canvas.addEventListener("mousemove", (event) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-  
+
   if (draggingCircle) {
-    console.log("mov")
+    console.log("mov");
     draggingCircle.x = mouseX;
     draggingCircle.y = mouseY;
     return;
   }
-  
+
   hoveredCircle = null;
-  
+
   for (const circle of circles) {
     const dx = mouseX - circle.x;
     const dy = mouseY - circle.y;
@@ -446,217 +480,141 @@ canvas.addEventListener('mousemove', (event) => {
   }
 });
 
-
-
-canvas.addEventListener('mouseup', (event) => {
+canvas.addEventListener("mouseup", (event) => {
   if (draggingCircle_db) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
     for (const circle of circles) {
-      console.log("test")
+      console.log("test");
       if (circle !== draggingCircle_db) {
         const dx = mouseX - circle.x;
         const dy = mouseY - circle.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= circle.radius) {
-          if (areCirclesConnected(draggingCircle_db,circle)){
-            deleteConnectionIfConnected(draggingCircle_db,circle)
+          if (areCirclesConnected(draggingCircle_db, circle)) {
+            deleteConnectionIfConnected(draggingCircle_db, circle);
             draggingCircle_db = null;
+          } else {
+            const connection = new Connection(draggingCircle_db, circle);
+            connections.push(connection);
+            draggingCircle_db = null;
+            break;
           }
-          else{
-          const connection = new Connection(draggingCircle_db, circle);
-          connections.push(connection);
-          draggingCircle_db = null;
-          break;
-          }
-      }
+        }
       }
     }
   }
   draggingCircle = null;
-
 });
 
-
-document.addEventListener('keydown', (event) => {
-  if (event.ctrlKey && event.key === 'z') {
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.key === "z") {
     if (actionsHistory.length > 0) {
       const lastAction = actionsHistory.pop();
 
-      if (lastAction.type === 'addCircle') {
+      if (lastAction.type === "addCircle") {
         const circleIndex = circles.indexOf(lastAction.circle);
         circle = circles[circleIndex];
         deleteConnectionsForCircle(circle);
         if (circleIndex !== -1) {
           circles.splice(circleIndex, 1);
         }
-      } else if (lastAction.type === 'removeConnection') {
+      } else if (lastAction.type === "removeConnection") {
         connections.push(lastAction.connection);
       }
     }
   }
 });
 
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Delete' && hoveredCircle) {
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Delete" && hoveredCircle) {
     const index = circles.indexOf(hoveredCircle);
     circles.splice(index, 1);
     deleteConnectionsForCircle(hoveredCircle);
-    actionsHistory.push({ type: 'removeCircle', circle: hoveredCircle });
+    actionsHistory.push({ type: "removeCircle", circle: hoveredCircle });
     hoveredCircle = null;
   }
 });
 
-canvas.addEventListener('click', (event) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
+let lastTapTime = 0;
 
-  if (event.shiftKey) {
+canvas.addEventListener("touchstart", (event) => {
+  // event.preventDefault();
+  if (event.touches.length > 1){
+    return
+  }
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTapTime;
+
+  const rect = canvas.getBoundingClientRect();
+  const touch = event.touches[0];
+  const mouseX = touch.clientX - rect.left;
+  const mouseY = touch.clientY - rect.top;
+
+  if (tapLength < 300 && tapLength > 0) {
+    // Double-tap detected
+    let any = false;
     for (const circle of circles) {
       const dx = mouseX - circle.x;
       const dy = mouseY - circle.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance <= circle.radius) {
-        const color = prompt('Enter a new color for the circle:', circle.fillColor);
-        if (color !== null) {
-          circle.setColor(color);
-        }
+        draggingCircle_db = circle;
+        draggingCircle = null;
+        any = true;
+        event.stopPropagation()
         break;
       }
     }
+    if (!any) {
+      event.stopPropagation()
+      const circle = new Circle(mouseX, mouseY,"", Date.now());
+      const name = prompt('Enter a name for the circle:', circle.name);
+      if (name !== null) {
+        circle.name = name;
+      }
+      circles.push(circle);
+      actionsHistory.push({ type: 'addCircle', circle });
+    }
+  } else {
+    // Single tap: same as the previous touchstart logic
+    for (const circle of circles) {
+      const dx = mouseX - circle.x;
+      const dy = mouseY - circle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= circle.radius) {
+        draggingCircle = circle;
+        event.stopPropagation()
+        break;
+        
+      }
+    }
+  }
+  lastTapTime = currentTime;
+});
+
+
+canvas.addEventListener("touchmove", (event) => {
+  // event.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = event.touches[0];
+  const mouseX = touch.clientX - rect.left;
+  const mouseY = touch.clientY - rect.top;
+
+  if (draggingCircle) {
+    draggingCircle.x = mouseX;
+    draggingCircle.y = mouseY;
   }
 });
 
-// Existing canvas variable
-
-// Add mobile event listeners
-canvas.addEventListener('touchstart', handleTouchStart, false);
-canvas.addEventListener('touchmove', handleTouchMove, false);
-canvas.addEventListener('touchend', handleTouchEnd, false);
-
-let touchTimer = null;
-let contextMenuTimer = null;
-
-// Convert touch events to mouse events
-function getTouchPos(canvas, touchEvent) {
-  const rect = canvas.getBoundingClientRect();
-  const touch = touchEvent.touches[0];
-  return {
-    x: touch.clientX - rect.left,
-    y: touch.clientY - rect.top
-  };
-}
-
-// Handle touch start
-function handleTouchStart(event) {
-  event.preventDefault();
-  const pos = getTouchPos(canvas, event);
-  const mouseEvent = new MouseEvent('mousedown', {
-    clientX: pos.x,
-    clientY: pos.y
-  });
-  canvas.dispatchEvent(mouseEvent);
-
-  // Start timer for long press to trigger delete
-  touchTimer = setTimeout(() => {
-    if (hoveredCircle) {
-      // Cancel context menu if delete is triggered
-      clearTimeout(contextMenuTimer);
-      const index = circles.indexOf(hoveredCircle);
-      circles.splice(index, 1);
-      deleteConnectionsForCircle(hoveredCircle);
-      actionsHistory.push({ type: 'removeCircle', circle: hoveredCircle });
-      hoveredCircle = null;
-    }
-  }, 700);  // Shorter long press duration for delete (700ms)
-
-  // Start timer for long press to trigger context menu
-  contextMenuTimer = setTimeout(() => {
-    if (!hoveredCircle) return; // Do not open context menu if circle was deleted
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = pos.x;
-    const mouseY = pos.y;
-
-    for (const circle of circles) {
-      const dx = mouseX - circle.x;
-      const dy = mouseY - circle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance <= circle.radius) {
-        const name = prompt('Enter a name for the circle:', circle.name);
-        if (name !== null) {
-          circle.name = name;
-        }
-        break;
-      }
-    }
-  }, 1000);  // Longer long press duration for context menu (1000ms)
-}
-
-// Handle touch move
-function handleTouchMove(event) {
-  event.preventDefault();
-  clearTimeout(touchTimer);  // Clear the timer if the user moves their finger
-  clearTimeout(contextMenuTimer);  // Clear the timer if the user moves their finger
-  const pos = getTouchPos(canvas, event);
-  const mouseEvent = new MouseEvent('mousemove', {
-    clientX: pos.x,
-    clientY: pos.y
-  });
-  canvas.dispatchEvent(mouseEvent);
-}
-
-// Handle touch end
-function handleTouchEnd(event) {
-  event.preventDefault();
-  clearTimeout(touchTimer); // Clear the timer if the touch ends before the threshold
-  clearTimeout(contextMenuTimer); // Clear the timer if the touch ends before the threshold
-  const mouseEvent = new MouseEvent('mouseup', {});
-  canvas.dispatchEvent(mouseEvent);
-}
-
-
-
-
-
-
-
-// Function to load the graph data from local storage
-function loadGraphFromLocalStorage() {
-  const jsonData = localStorage.getItem('graphData');
-  if (jsonData) {
-    const data = JSON.parse(jsonData);
-
-    circles.length = 0;
-    connections.length = 0;
-
-    for (const circleData of data.circles) {
-      const circle = new Circle(
-        circleData.x,
-        circleData.y,
-        circleData.radius,
-        circleData.fillColor,
-        circleData.strokeColor,
-        circleData.strokeWidth
-      );
-      circle.name = circleData.name;
-      circles.push(circle);
-    }
-
-    for (const connectionData of data.connections) {
-      const circleA = circles.find((circle) => circle.name === connectionData.circleA.name);
-      const circleB = circles.find((circle) => circle.name === connectionData.circleB.name);
-      const connection = new Connection(circleA, circleB, connectionData.k);
-      connections.push(connection);
-    }
-  }
-}
-
+canvas.addEventListener("touchend", (event) => {
+  // event.preventDefault();
+  draggingCircle = null;
+});
 
 
 function animate() {
@@ -672,13 +630,11 @@ function animate() {
   }
 
   handleCollisions();
-  calculateElectrostaticForceAndMove()
   requestAnimationFrame(animate);
 }
 window.onload = () => {
   loadGraphFromLocalStorage();
 };
-
 
 animate();
 setInterval(saveGraphToLocalStorage, 1000);

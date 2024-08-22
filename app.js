@@ -398,6 +398,18 @@ document.addEventListener("keydown", (event) => {
     selectedCircle = newCircle
   }
 });
+
+document.addEventListener("keydown", (event) => {
+  if (event.shiftKey && event.key === "Enter" && selectedCircle) {
+    const newName = prompt("Enter a new name for the selected circle:", selectedCircle.name);
+    if (newName !== null) {
+      selectedCircle.name = newName;
+      actionsHistory.push({ type: "renameCircle", circle: selectedCircle, oldName: selectedCircle.name, newName });
+    }
+  }
+});
+
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Tab") {
     event.preventDefault(); // Prevent default tab behavior

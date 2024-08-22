@@ -203,7 +203,7 @@ function loadGraph() {
 
 function calculateAdaptiveFontSize(radius, name) {
   const maxFontSize = smaller_edge / 20 / 2;
-  const maxNameWidth = radius * 2 ;
+  const maxNameWidth = radius * 2 * 0.7;
   let fontSize = maxFontSize;
   while (fontSize > 1) {
     ctx.font = `${fontSize}px Arial`;
@@ -277,7 +277,7 @@ class Circle {
       ctx.textBaseline = "middle";
 
       const words = this.name.split(" ");
-      const maxWidth = this.radius * 1.8; // 半径に基づく最大幅
+      const maxWidth = this.radius * 2; // 半径に基づく最大幅
       let line = "";
       const lines = [];
       

@@ -265,40 +265,49 @@ class Circle {
     }
   }
 }
-
 class Connection {
   constructor(circleA, circleB, k = 0.01) {
     this.circleA = circleA;
     this.circleB = circleB;
     this.k = k;
-    // this.restLength = this.distanceBetween(circleA, circleB);
     this.restLength = ((circleA.radius + circleB.radius) / 2) * 3;
   }
 
   draw() {
-    const arrowSize = 10; // Size of the arrowhead
     const angle = Math.atan2(
       this.circleB.y - this.circleA.y,
       this.circleB.x - this.circleA.x
     );
 
+    // Calculate the tangent points
+    const startX = this.circleA.x + this.circleA.radius * Math.cos(angle);
+    const startY = this.circleA.y + this.circleA.radius * Math.sin(angle);
+    const endX = this.circleB.x - this.circleB.radius * Math.cos(angle);
+    const endY = this.circleB.y - this.circleB.radius * Math.sin(angle);
+
     // Draw the line
     ctx.beginPath();
-    ctx.moveTo(this.circleA.x, this.circleA.y);
-    ctx.lineTo(this.circleB.x, this.circleB.y);
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
     ctx.strokeStyle = "#000";
     ctx.stroke();
 
-    // Draw the arrowhead
+    // Draw the arrowhead at the end of the connection
+    this.drawArrowhead(endX, endY, angle);
+  }
+
+  drawArrowhead(x, y, angle) {
+    const arrowSize = 10; // Size of the arrowhead
+
     ctx.beginPath();
     ctx.moveTo(
-      this.circleB.x - arrowSize * Math.cos(angle - Math.PI / 6),
-      this.circleB.y - arrowSize * Math.sin(angle - Math.PI / 6)
+      x - arrowSize * Math.cos(angle - Math.PI / 6),
+      y - arrowSize * Math.sin(angle - Math.PI / 6)
     );
-    ctx.lineTo(this.circleB.x, this.circleB.y);
+    ctx.lineTo(x, y);
     ctx.lineTo(
-      this.circleB.x - arrowSize * Math.cos(angle + Math.PI / 6),
-      this.circleB.y - arrowSize * Math.sin(angle + Math.PI / 6)
+      x - arrowSize * Math.cos(angle + Math.PI / 6),
+      y - arrowSize * Math.sin(angle + Math.PI / 6)
     );
     ctx.strokeStyle = "#000";
     ctx.stroke();
@@ -326,6 +335,7 @@ class Connection {
     this.circleB.y -= fy;
   }
 }
+
 
 
 let circles = [];

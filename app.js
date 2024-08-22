@@ -16,6 +16,7 @@ window.addEventListener("resize", () => {
 
 const actionsHistory = [];
 let hoveredCircle = null;
+let selectedCircle = null;
 
 function generateRandomCircles() {
   for (const circle of circles) {
@@ -358,22 +359,68 @@ canvas.addEventListener("mousedown", (event) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-  {
-    for (const circle of circles) {
-      const dx = mouseX - circle.x;
-      const dy = mouseY - circle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance <= circle.radius) {
-        draggingCircle = circle;
-        if (draggingCircle_db) {
-          draggingCircle = null;
-        }
-        break;
+  for (const circle of circles) {
+    const dx = mouseX - circle.x;
+    const dy = mouseY - circle.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= circle.radius) {
+      selectedCircle = circle;
+      draggingCircle = circle;
+      if (draggingCircle_db) {
+        draggingCircle = null;
       }
+      break;
     }
   }
 });
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.key === "Enter" && selectedCircle) {
+    const newCircle = new Circle(
+      selectedCircle.x + 50, // Adjust the position of the new circle
+      selectedCircle.y + 50, 
+      "", 
+      Date.now()
+    );
+
+    const name = prompt("Enter a name for the circle:", newCircle.name);
+    if (name !== null) {
+      newCircle.name = name;
+    }
+
+    circles.push(newCircle);
+    actionsHistory.push({ type: "addCircle", circle: newCircle });
+
+    // Create a connection between the selected circle and the new circle
+    const connection = new Connection(newCircle,selectedCircle);
+    connections.push(connection);
+    selectedCircle = newCircle
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Tab") {
+    event.preventDefault(); // Prevent default tab behavior
+
+    if (circles.length > 0) {
+      const currentIndex = selectedCircle ? circles.indexOf(selectedCircle) : -1;
+      const nextIndex = (currentIndex + 1) % circles.length;
+      selectedCircle = circles[nextIndex];
+    }
+  }
+});
+Circle.prototype.draw = function() {
+  ctx.beginPath();
+  ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+  ctx.closePath();
+  ctx.fillStyle = this.fillColor;
+  ctx.fill();
+  ctx.lineWidth = this.strokeWidth;
+  ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor; // Highlight selected circle
+  ctx.stroke();
+  this.drawCircleName();
+};
+
 
 canvas.addEventListener("contextmenu", (event) => {
   event.preventDefault(); // Prevent the default right-click menu from appearing

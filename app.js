@@ -204,17 +204,27 @@ function loadGraph() {
 function calculateAdaptiveFontSize(radius, name) {
   const maxFontSize = smaller_edge;
   const maxNameWidth = radius * 2 * 0.7;
+
+  let low = 1;
+  let high = maxFontSize;
   let fontSize = maxFontSize;
-  while (fontSize > 1) {
-    ctx.font = `${fontSize}px Arial`;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    ctx.font = `${mid}px Arial`;
     const nameWidth = ctx.measureText(name).width;
+
     if (nameWidth <= maxNameWidth) {
-      break;
+      fontSize = mid; // 現在のフォントサイズが適切
+      low = mid + 1;  // より大きなフォントサイズを試す
+    } else {
+      high = mid - 1; // フォントサイズが大きすぎるので小さくする
     }
-    fontSize -= 1;
   }
+
   return fontSize;
 }
+
 class Rectangle {
   constructor(x, y, width, height, name = "", id = "") {
     Object.assign(this, { x, y, width, height, name, id });

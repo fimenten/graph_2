@@ -404,11 +404,21 @@ document.addEventListener("keydown", (event) => {
 
     if (circles.length > 0) {
       const currentIndex = selectedCircle ? circles.indexOf(selectedCircle) : -1;
-      const nextIndex = (currentIndex + 1) % circles.length;
+
+      let nextIndex;
+      if (event.shiftKey) {
+        // Reverse direction if Shift is held
+        nextIndex = (currentIndex - 1 + circles.length) % circles.length;
+      } else {
+        // Forward direction
+        nextIndex = (currentIndex + 1) % circles.length;
+      }
+
       selectedCircle = circles[nextIndex];
     }
   }
 });
+
 Circle.prototype.draw = function() {
   ctx.beginPath();
   ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);

@@ -203,7 +203,7 @@ function loadGraph() {
 
 function calculateAdaptiveFontSize(radius, name) {
   const maxFontSize = smaller_edge / 20 / 2;
-  const maxNameWidth = radius * 2 * 0.7;
+  const maxNameWidth = radius * 2 ;
   let fontSize = maxFontSize;
   while (fontSize > 1) {
     ctx.font = `${fontSize}px Arial`;
@@ -241,21 +241,15 @@ class Circle {
     fillColor = "blue",
     strokeColor = "black",
     strokeWidth = 2
-
   ) {
     this.x = x;
     this.y = y;
-    console.log(radius);
     this.radius = radius;
     this.fillColor = fillColor;
     this.strokeColor = strokeColor;
     this.strokeWidth = strokeWidth;
     this.name = name;
-    this.id = id
-    // const name = prompt('Enter a name for the circle:', this.name);
-    // if (name !== null) {
-    //   this.name = name;
-    // }
+    this.id = id;
   }
 
   draw() {
@@ -269,9 +263,11 @@ class Circle {
     ctx.stroke();
     this.drawCircleName();
   }
+
   setColor(color) {
     this.fillColor = color;
   }
+
   drawCircleName() {
     if (this.name) {
       const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
@@ -279,10 +275,46 @@ class Circle {
       ctx.fillStyle = "white";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(this.name, this.x, this.y);
+
+      const words = this.name.split(" ");
+      const maxWidth = this.radius * 1.8; // 半径に基づく最大幅
+      let line = "";
+      const lines = [];
+      
+      words.forEach((word) => {
+        const testLine = line + word + " ";
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+
+        if (testWidth > maxWidth && line !== "") {
+          lines.push(line.trim());
+          line = word + " ";
+        } else {
+          line = testLine;
+        }
+      });
+      
+      lines.push(line.trim());
+
+      const lineHeight = fontSize * 1.2; // 行間の調整
+      const totalHeight = lines.length * lineHeight;
+      let yPosition = this.y - totalHeight / 2;
+
+      lines.forEach((line) => {
+        ctx.fillText(line, this.x, yPosition);
+        yPosition += lineHeight;
+      });
     }
   }
 }
+
+// フォントサイズを計算する関数
+function calculateAdaptiveFontSize(radius, text) {
+  const baseSize = radius / 3; // 基本フォントサイズ
+  const lengthFactor = Math.max(1, text.length / 10); // 文字数に基づく調整
+  return baseSize / lengthFactor;
+}
+
 class Connection {
   constructor(circleA, circleB, k = 0.01) {
     this.circleA = circleA;

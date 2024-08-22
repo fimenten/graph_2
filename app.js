@@ -202,7 +202,7 @@ function loadGraph() {
 }
 
 function calculateAdaptiveFontSize(radius, name) {
-  const maxFontSize = smaller_edge;
+  const maxFontSize = smaller_edge/10;
   const maxNameWidth = radius * 2 * 0.7;
 
   let low = 1;

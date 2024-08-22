@@ -6,6 +6,8 @@ canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
 let smaller_edge = Math.min(canvas.width, canvas.height);
 
+let lastpos = {x:null,y:null}
+
 // Resize canvas when window size changes
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth - 100;
@@ -213,6 +215,21 @@ function calculateAdaptiveFontSize(radius, name) {
   }
   return fontSize;
 }
+class Rectangle {
+  constructor(x, y, width, height, name = "", id = "") {
+    Object.assign(this, { x, y, width, height, name, id });
+  }
+  draw() {
+    ctx.fillStyle = "blue";
+    ctx.fillRect(this.x + canvasOffset.x, this.y + canvasOffset.y, this.width, this.height);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(this.x + canvasOffset.x, this.y + canvasOffset.y, this.width, this.height);
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.name, this.x + this.width / 2 + canvasOffset.x, this.y + this.height / 2 + canvasOffset.y);
+  }
+}
 
 class Circle {
   constructor(
@@ -354,12 +371,13 @@ function resetCanvas() {
     connections = [];
   }
 }
-
+let isDraggingCanvas = false;
 canvas.addEventListener("mousedown", (event) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-
+  
+  anyCircle = false;
   for (const circle of circles) {
     const dx = mouseX - circle.x;
     const dy = mouseY - circle.y;
@@ -371,8 +389,15 @@ canvas.addEventListener("mousedown", (event) => {
       if (draggingCircle_db) {
         draggingCircle = null;
       }
+      anyCircle = true;
       break;
     }
+  }
+  if (!anyCircle){
+    isDraggingCanvas = true;
+    lastpos.x = mouseX;
+    lastpos.y = mouseY;
+
   }
 });
 document.addEventListener("keydown", (event) => {
@@ -532,7 +557,6 @@ canvas.addEventListener("dblclick", (event) => {
     }
   }
 });
-
 canvas.addEventListener("mousemove", (event) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
@@ -557,6 +581,17 @@ canvas.addEventListener("mousemove", (event) => {
       break;
     }
   }
+  if (isDraggingCanvas){
+    diff_x = lastpos.x - mouseX;
+    diff_y = lastpos.y - mouseY;
+    for (let circle of circles){
+      circle.x = circle.x - diff_x
+      circle.y = circle.y - diff_y
+    }
+    lastpos.x = mouseX
+    lastpos.y = mouseY
+
+  }
 });
 
 canvas.addEventListener("mouseup", (event) => {
@@ -564,8 +599,8 @@ canvas.addEventListener("mouseup", (event) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
+    let isany = false;
     for (const circle of circles) {
-      console.log("test");
       if (circle !== draggingCircle_db) {
         const dx = mouseX - circle.x;
         const dy = mouseY - circle.y;
@@ -579,13 +614,16 @@ canvas.addEventListener("mouseup", (event) => {
             const connection = new Connection(draggingCircle_db, circle);
             connections.push(connection);
             draggingCircle_db = null;
-            break;
           }
+        isany = true;
+        break
         }
       }
     }
+
   }
   draggingCircle = null;
+  isDraggingCanvas = false;
 });
 
 document.addEventListener("keydown", (event) => {

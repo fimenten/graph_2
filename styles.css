@@ -1,33 +1,37 @@
 body {
   margin: 0;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   background-color: #f0f0f0;
+  overflow: hidden; /* Prevent scrolling issues when zooming */
 }
 
 canvas {
   border: 1px solid #000;
-  /* width: 800px; */
-  /* height: 600px; */
+  width: 100%; /* Make the canvas take the full width of its container */
+  height: auto; /* Maintain aspect ratio automatically */
+  max-width: 100vw; /* Ensure it doesn't exceed the viewport width */
+  max-height: 100vh; /* Ensure it doesn't exceed the viewport height */
+  box-sizing: border-box; /* Ensure the border is included in the width and height */
 }
-button {
-  height: 10vw; /* adjust the height as desired */
-  width: 5vw; /* adjust the height as desired */
 
-  /* padding: 0 5vw; adjust the padding to achieve the desired aspect ratio */
-  /* font-size: 1em; adjust the font size as desired */
+button {
+  width: 80vw; /* Adjust the button width to be responsive */
+  max-width: 200px; /* Limit the maximum width for large screens */
+  height: 50px; /* Set a fixed height for consistency */
+  font-size: 1rem; /* Relative font size */
 }
+
 .button-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%; /* Make sure the button container takes the full width */
 }
 
 .button-container button {
-  margin-bottom: 10px;
-}
-.button-container {
-  width: 30%;
+  margin-bottom: 10px; /* Add consistent spacing between buttons */
 }

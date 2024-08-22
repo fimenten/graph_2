@@ -367,7 +367,7 @@ canvas.addEventListener("mousedown", (event) => {
 
 canvas.addEventListener("contextmenu", (event) => {
   event.preventDefault(); // Prevent the default right-click menu from appearing
-
+  event.stopPropagation()
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
@@ -620,15 +620,14 @@ canvas.addEventListener("touchend", (event) => {
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (const circle of circles) {
-    circle.draw();
-  }
 
   for (const connection of connections) {
     connection.draw();
     connection.applyForces();
   }
-
+  for (const circle of circles) {
+    circle.draw();
+  }
   handleCollisions();
   requestAnimationFrame(animate);
 }

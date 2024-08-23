@@ -7,18 +7,66 @@ canvas.height = window.innerHeight;
 let smaller_edge = Math.min(canvas.width, canvas.height);
 
 let lastpos = {x:null,y:null}
+const actionsHistory = [];
+let hoveredCircle = null;
+let selectedCircle = null;
+let circles = [];
+let connections = [];
+let draggingCircle = null;
+let draggingCircle_db = null;
+let lastTapTime = 0;
+let isDraggingCanvas = false;
+
+const SMALL_RADIUS = 1 / 20
+const MEDIUM_RADIUS = 1 / 20
+const LARGE_RADIUS = 1 / 20
+
+
+function calculatePageRank(damping = 0.85, iterations = 20) {
+  const n = circles.length;
+  let pageRanks = new Array(n).fill(1 / n);
+  let newPageRanks = new Array(n).fill(0);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    // Reset new page ranks
+    newPageRanks.fill(0);
+
+    // Calculate new page ranks
+    for (let i = 0; i < n; i++) {
+      const circle = circles[i];
+      const outgoingConnections = connections.filter(conn => conn.circleA === circle);
+
+      if (outgoingConnections.length > 0) {
+        const rank = pageRanks[i] / outgoingConnections.length;
+        for (const conn of outgoingConnections) {
+          const targetIndex = circles.indexOf(conn.circleB);
+          newPageRanks[targetIndex] += rank;
+        }
+      }
+    }
+
+    // Apply damping factor and normalize
+    for (let i = 0; i < n; i++) {
+      newPageRanks[i] = (1 - damping) / n + damping * newPageRanks[i];
+    }
+
+    // Update page ranks
+    pageRanks = [...newPageRanks];
+  }
+
+  // Assign page ranks to circles
+  for (let i = 0; i < n; i++) {
+    circles[i].pageRank = pageRanks[i];
+  }
+}
 
 // Resize canvas when window size changes
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth - 100;
   canvas.height = window.innerHeight;
   smaller_edge = Math.min(canvas.width, canvas.height);
-  // console.log(smaller_edge)
 });
 
-const actionsHistory = [];
-let hoveredCircle = null;
-let selectedCircle = null;
 
 function generateRandomCircles() {
   for (const circle of circles) {
@@ -28,7 +76,6 @@ function generateRandomCircles() {
     circle.y = y;
   }
 }
-// Function to save the graph data to local storage
 function saveGraphToLocalStorage() {
   const data = {
     circles: circles,
@@ -38,7 +85,44 @@ function saveGraphToLocalStorage() {
   localStorage.setItem("graphData", jsonData);
 }
 
-// Function to load the graph data from local storage
+function calculateElectrostaticForceAndMove() {
+  // const circles = []; // Array of circles with positions and radii
+  const charge = 1.0; // Charge of each circle
+
+  const kInput = document.getElementById('k-input');
+  const k = parseFloat(kInput.value); // Read the value of k from the input element
+
+  for (let i = 0; i < circles.length; i++) {
+    let totalForceX = 0;
+    let totalForceY = 0;
+
+    const circleA = circles[i];
+
+    for (let j = 0; j < circles.length; j++) {
+      if (i === j) continue; // Skip calculating force for the same circle
+
+      const circleB = circles[j];
+
+      const dx = circleB.x - circleA.x;
+      const dy = circleB.y - circleA.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      const forceMagnitude = -(k * charge * charge) / (distance * distance);
+      const angle = Math.atan2(dy, dx);
+
+      const forceX = forceMagnitude * Math.cos(angle);
+      const forceY = forceMagnitude * Math.sin(angle);
+
+      totalForceX += forceX;
+      totalForceY += forceY;
+    }
+
+    // Update circle position based on the total force
+    circleA.x += totalForceX;
+    circleA.y += totalForceY;
+  }
+}
+
 function loadGraphFromLocalStorage() {
   const jsonData = localStorage.getItem("graphData");
   if (jsonData) {
@@ -51,8 +135,8 @@ function loadGraphFromLocalStorage() {
       const circle = new Circle(
         circleData.x,
         circleData.y,
-        name = circleData.name,
-        id = circleData.id,
+        circleData.name,
+        circleData.id,
         circleData.radius,
         circleData.fillColor,
         circleData.strokeColor,
@@ -115,8 +199,6 @@ function areCirclesConnected(circleA, circleB) {
   for (const connection of connections) {
     if (
       (connection.circleA === circleA && connection.circleB === circleB) 
-      // ||
-      // (connection.circleA === circleB && connection.circleB === circleA)
     ) {
       return true;
     }
@@ -247,7 +329,7 @@ class Circle {
     y,
     name = "",
     id = "",
-    radius = smaller_edge / 20,
+    radius = smaller_edge *MEDIUM_RADIUS,
     fillColor = "blue",
     strokeColor = "black",
     strokeWidth = 2
@@ -255,7 +337,6 @@ class Circle {
   ) {
     this.x = x;
     this.y = y;
-    console.log(radius);
     this.radius = radius;
     this.fillColor = fillColor;
     this.strokeColor = strokeColor;
@@ -269,16 +350,32 @@ class Circle {
   }
 
   draw() {
+    if (this.pageRank) {
+      const minRadius = smaller_edge * SMALL_RADIUS;
+      const maxRadius = smaller_edge * LARGE_RADIUS;
+      this.radius = minRadius + (maxRadius - minRadius) * this.pageRank * circles.length;
+    }
+    console.log(this.pageRank)
+    console.log(2)
+
+
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-    ctx.closePath();
+    ctx.closePath()
     ctx.fillStyle = this.fillColor;
     ctx.fill();
     ctx.lineWidth = this.strokeWidth;
     ctx.strokeStyle = this.strokeColor;
     ctx.stroke();
     this.drawCircleName();
-  }
+
+    // ページランクを表示
+    if (this.pageRank) {
+      ctx.fillStyle = "black";
+      ctx.font = "12px Arial";
+      ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + this.radius + 15);
+    }
+    }
   setColor(color) {
     this.fillColor = color;
   }
@@ -366,10 +463,7 @@ class Connection {
 
 
 
-let circles = [];
-let connections = [];
-let draggingCircle = null;
-let draggingCircle_db = null;
+
 
 function resetCanvas() {
   const confirmation = window.confirm(
@@ -381,7 +475,6 @@ function resetCanvas() {
     connections = [];
   }
 }
-let isDraggingCanvas = false;
 canvas.addEventListener("mousedown", (event) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
@@ -476,8 +569,19 @@ Circle.prototype.draw = function() {
   ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor; // Highlight selected circle
   ctx.stroke();
   this.drawCircleName();
-};
+  if (this.pageRank) {
+    const minRadius = smaller_edge * SMALL_RADIUS;
+    const maxRadius = smaller_edge * LARGE_RADIUS;
+    this.radius = minRadius + (maxRadius - minRadius) * this.pageRank * circles.length;
+  }
 
+  // ページランクを表示
+  if (this.pageRank) {
+    ctx.fillStyle = "black";
+    ctx.font = "12px Arial";
+    ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + this.radius + 15);
+  }
+};
 
 canvas.addEventListener("contextmenu", (event) => {
   event.preventDefault(); // Prevent the default right-click menu from appearing
@@ -665,7 +769,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-let lastTapTime = 0;
 
 canvas.addEventListener("touchstart", (event) => {
   // event.preventDefault();
@@ -742,12 +845,14 @@ canvas.addEventListener("touchend", (event) => {
   // event.preventDefault();
   draggingCircle = null;
 });
-
+let frameCount = 0;
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-
+  frameCount++;
+  if (frameCount % 60 === 0) {  // 60フレームごとに再計算
+    calculatePageRank();
+  }
   for (const connection of connections) {
     connection.draw();
     connection.applyForces();
@@ -755,6 +860,7 @@ function animate() {
   for (const circle of circles) {
     circle.draw();
   }
+  // calculateElectrostaticForceAndMove()
   handleCollisions();
   requestAnimationFrame(animate);
 }

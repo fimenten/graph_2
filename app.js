@@ -194,6 +194,64 @@ function handleCollisions() {
   }
 }
 
+function handleCollisionsRect() {
+  for (let i = 0; i < circles.length; i++) {
+    for (let j = i + 1; j < circles.length; j++) {
+      const circleA = circles[i];
+      const circleB = circles[j];
+
+      // 各長方形の境界を計算
+      const rectA = {
+        left: circleA.x - circleA.rectWidth / 2,
+        right: circleA.x + circleA.rectWidth / 2,
+        top: circleA.y - circleA.rectHeight / 2,
+        bottom: circleA.y + circleA.rectHeight / 2,
+      };
+
+      const rectB = {
+        left: circleB.x - circleB.rectWidth / 2,
+        right: circleB.x + circleB.rectWidth / 2,
+        top: circleB.y - circleB.rectHeight / 2,
+        bottom: circleB.y + circleB.rectHeight / 2,
+      };
+
+      // 衝突判定：AとBの長方形が重なっているか
+      if (
+        rectA.left < rectB.right &&
+        rectA.right > rectB.left &&
+        rectA.top < rectB.bottom &&
+        rectA.bottom > rectB.top
+      ) {
+        // 衝突が発生した場合、どの方向に押し出すかを決定
+        const overlapX = Math.min(rectA.right - rectB.left, rectB.right - rectA.left);
+        const overlapY = Math.min(rectA.bottom - rectB.top, rectB.bottom - rectA.top);
+
+        if (overlapX < overlapY) {
+          const offsetX = overlapX / 2;
+          if (rectA.left < rectB.left) {
+            circleA.x -= offsetX;
+            circleB.x += offsetX;
+          } else {
+            circleA.x += offsetX;
+            circleB.x -= offsetX;
+          }
+        } else {
+          const offsetY = overlapY / 2;
+          if (rectA.top < rectB.top) {
+            circleA.y -= offsetY;
+            circleB.y += offsetY;
+          } else {
+            circleA.y += offsetY;
+            circleB.y -= offsetY;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
 function areCirclesConnected(circleA, circleB) {
   for (const connection of connections) {
     if (
@@ -925,7 +983,7 @@ function animate() {
   }
 
   // calculateElectrostaticForceAndMove()
-  handleCollisions();
+  handleCollisionsRect();
   requestAnimationFrame(animate);
 }
 window.onload = () => {

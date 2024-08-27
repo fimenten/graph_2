@@ -589,14 +589,10 @@ Circle.prototype.draw = function () {
 
   for (let i = 1; i < words.length; i++) {
     const word = words[i];
-    const width = ctx.measureText(currentLine + " " + word).width;
-    if (width < maxWidth - 2 * padding) {
-      currentLine += " " + word;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
+    lines.push(currentLine);
+    currentLine = word;
     }
-  }
+  
   lines.push(currentLine);
 
   // 長方形のサイズを計算

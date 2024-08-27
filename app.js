@@ -395,10 +395,10 @@ class Connection {
     this.circleA = circleA;
     this.circleB = circleB;
     this.k = k;
-    this.restLength = ((circleA.rectWidth + circleB.rectWidth) / 2) * 3;
   }
 
 draw() {
+  this.restLength = ((this.circleA.rectWidth + this.circleB.rectWidth) / 2) * 3;
   const angle = Math.atan2(
     this.circleB.y - this.circleA.y,
     this.circleB.x - this.circleA.x

@@ -395,31 +395,43 @@ class Connection {
     this.circleA = circleA;
     this.circleB = circleB;
     this.k = k;
-    this.restLength = ((circleA.radius + circleB.radius) / 2) * 3;
+    this.restLength = ((circleA.rectWidth + circleB.rectWidth) / 2) * 3;
   }
 
-  draw() {
-    const angle = Math.atan2(
-      this.circleB.y - this.circleA.y,
-      this.circleB.x - this.circleA.x
-    );
+draw() {
+  const angle = Math.atan2(
+    this.circleB.y - this.circleA.y,
+    this.circleB.x - this.circleA.x
+  );
 
-    // Calculate the tangent points
-    const startX = this.circleA.x + this.circleA.radius * Math.cos(angle);
-    const startY = this.circleA.y + this.circleA.radius * Math.sin(angle);
-    const endX = this.circleB.x - this.circleB.radius * Math.cos(angle);
-    const endY = this.circleB.y - this.circleB.radius * Math.sin(angle);
+  // 長方形Aの接点を計算
+  const halfWidthA = this.circleA.rectWidth / 2;
+  const halfHeightA = this.circleA.rectHeight / 2;
 
-    // Draw the line
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
-    ctx.strokeStyle = "#000";
-    ctx.stroke();
+  const startX = this.circleA.x + halfWidthA * Math.cos(angle);
+  const startY = this.circleA.y + halfHeightA * Math.sin(angle);
 
-    // Draw the arrowhead at the end of the connection
-    this.drawArrowhead(endX, endY, angle);
-  }
+  // 長方形Bの接点を計算
+  const halfWidthB = this.circleB.rectWidth / 2;
+  const halfHeightB = this.circleB.rectHeight / 2;
+
+  const endX = this.circleB.x - halfWidthB * Math.cos(angle);
+  const endY = this.circleB.y - halfHeightB * Math.sin(angle);
+
+  console.log(endX, endY);
+
+  // 線を描画
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.strokeStyle = "#000";
+  ctx.stroke();
+
+  // 矢印の頭を描画
+  this.drawArrowhead(endX, endY, angle);
+}
+
+  
 
   drawArrowhead(x, y, angle) {
     const arrowSize = 20; // Size of the arrowhead
@@ -560,7 +572,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 Circle.prototype.draw = function () {
-  const maxWidth = 150; // 長方形の最大幅
   const padding = 10; // 長方形の内側の余白
 
   // デフォルトのフォントスタイルを取得
@@ -591,7 +602,9 @@ Circle.prototype.draw = function () {
   // 長方形のサイズを計算
   const rectWidth = ctx.measureText(this.name).width + 2 * padding;
   const rectHeight = lines.length * lineHeight + 2 * padding;
-
+  
+  this.rectWidth = rectWidth
+  this.rectHeight = rectHeight
   // 長方形を描画
   ctx.beginPath();
   ctx.rect(this.x - rectWidth / 2, this.y - rectHeight / 2, rectWidth, rectHeight);

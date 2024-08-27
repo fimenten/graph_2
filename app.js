@@ -422,7 +422,7 @@ class Connection {
   }
 
   drawArrowhead(x, y, angle) {
-    const arrowSize = 10; // Size of the arrowhead
+    const arrowSize = 20; // Size of the arrowhead
 
     ctx.beginPath();
     ctx.moveTo(

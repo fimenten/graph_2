@@ -589,7 +589,7 @@ Circle.prototype.draw = function () {
   lines.push(currentLine);
 
   // 長方形のサイズを計算
-  const rectWidth = Math.min(ctx.measureText(this.name).width + 2 * padding, maxWidth);
+  const rectWidth = ctx.measureText(this.name).width + 2 * padding;
   const rectHeight = lines.length * lineHeight + 2 * padding;
 
   // 長方形を描画

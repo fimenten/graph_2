@@ -142,7 +142,6 @@ function loadGraphFromLocalStorage() {
         circleData.strokeColor,
         circleData.strokeWidth
       );
-      circle.name = circleData.name;
       circles.push(circle);
     }
 
@@ -380,6 +379,7 @@ class Circle {
     this.fillColor = color;
   }
   drawCircleName() {
+    console.log(this.x)
     if (this.name) {
       const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
       ctx.font = `${fontSize}px Arial`;
@@ -394,11 +394,11 @@ class Connection {
   constructor(circleA, circleB, k = 0.01) {
     this.circleA = circleA;
     this.circleB = circleB;
-    this.k = k;
+    this.k = 0.00;
   }
 
 draw() {
-  this.restLength = ((this.circleA.rectWidth + this.circleB.rectWidth) / 2) * 3;
+  this.restLength = ((this.circleA.rectWidth + this.circleB.rectWidth) / 2) ;
   const angle = Math.atan2(
     this.circleB.y - this.circleA.y,
     this.circleB.x - this.circleA.x
@@ -418,7 +418,6 @@ draw() {
   const endX = this.circleB.x - halfWidthB * Math.cos(angle);
   const endY = this.circleB.y - halfHeightB * Math.sin(angle);
 
-  console.log(endX, endY);
 
   // 線を描画
   ctx.beginPath();
@@ -428,7 +427,11 @@ draw() {
   ctx.stroke();
 
   // 矢印の頭を描画
-  this.drawArrowhead(endX, endY, angle);
+  const angleline = Math.atan2(
+    -startY + endY,
+    -startX + endX
+  );
+  this.drawArrowhead(endX, endY, angleline);
 }
 
   
@@ -457,6 +460,7 @@ draw() {
   }
 
   applyForces() {
+    this.restLength = Math.sqrt((this.circleA.rectWidth * this.circleB.rectWidth)/2) ;
     const distance = this.distanceBetween(this.circleA, this.circleB);
     const force = this.k * (distance - this.restLength);
 
@@ -498,7 +502,7 @@ canvas.addEventListener("mousedown", (event) => {
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance <= circle.radius) {
+    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
       selectedCircle = circle;
       draggingCircle = circle;
       if (draggingCircle_db) {
@@ -595,21 +599,30 @@ Circle.prototype.draw = function () {
   
   lines.push(currentLine);
 
-  // 長方形のサイズを計算
   const rectWidth = ctx.measureText(this.name).width + 2 * padding;
   const rectHeight = lines.length * lineHeight + 2 * padding;
   
-  this.rectWidth = rectWidth
-  this.rectHeight = rectHeight
-  // 長方形を描画
+  this.rectWidth = rectWidth;
+  this.rectHeight = rectHeight;
+  
+  // 楕円を描画
   ctx.beginPath();
-  ctx.rect(this.x - rectWidth / 2, this.y - rectHeight / 2, rectWidth, rectHeight);
-  ctx.closePath();
+  ctx.ellipse(
+    this.x, // 楕円の中心X座標
+    this.y, // 楕円の中心Y座標
+    rectWidth / 2, // 楕円のX半径
+    rectHeight / 2, // 楕円のY半径
+    0, // 回転角度 (ラジアン)
+    0, // 開始角度 (ラジアン)
+    2 * Math.PI // 終了角度 (ラジアン)
+  );
   ctx.fillStyle = this.fillColor;
   ctx.fill();
   ctx.lineWidth = this.strokeWidth;
   ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor;
   ctx.stroke();
+  ctx.closePath();
+  
 
   // テキストを描画
   ctx.fillStyle = "white";
@@ -641,7 +654,7 @@ canvas.addEventListener("contextmenu", (event) => {
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance <= circle.radius) {
+    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
       const name = prompt("Enter a name for the circle:", circle.name);
       if (name !== null) {
         circle.name = name;
@@ -664,7 +677,7 @@ canvas.addEventListener("click", (event) => {
       const dy = mouseY - circle.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance <= circle.radius) {
+      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
         const color = prompt(
           "Enter a new color for the circle:",
           circle.fillColor
@@ -694,7 +707,7 @@ canvas.addEventListener("dblclick", (event) => {
       const dy = mouseY - circle.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance <= circle.radius) {
+      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
         draggingCircle_db = circle;
         draggingCircle = null;
         console.log("testt");
@@ -736,7 +749,7 @@ canvas.addEventListener("mousemove", (event) => {
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance <= circle.radius) {
+    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
       hoveredCircle = circle;
       break;
     }
@@ -762,11 +775,7 @@ canvas.addEventListener("mouseup", (event) => {
     let isany = false;
     for (const circle of circles) {
       if (circle !== draggingCircle_db) {
-        const dx = mouseX - circle.x;
-        const dy = mouseY - circle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance <= circle.radius) {
+        if (isXYinTheRectangle(circle,mouseX,mouseY)) {
           if (areCirclesConnected(draggingCircle_db, circle)) {
             deleteConnectionIfConnected(draggingCircle_db, circle);
             draggingCircle_db = null;
@@ -814,7 +823,17 @@ document.addEventListener("keydown", (event) => {
     hoveredCircle = null;
   }
 });
+function isXYinTheRectangle(circle,x,y){
+  in_x =  Math.abs(circle.x - x) < circle.rectWidth/2
+  in_y =  Math.abs(circle.y - y) < circle.rectHeight/2
+  return in_x&in_y
+}
+function isXYinTheCircle(circle,x,y){
+  dx = circle.x - x
+  dy = circle.y - y
 
+  return Math.sqrt(dx*dx +  dy *dy) < circle.radius
+}
 
 canvas.addEventListener("touchstart", (event) => {
   // event.preventDefault();
@@ -833,11 +852,8 @@ canvas.addEventListener("touchstart", (event) => {
     // Double-tap detected
     let any = false;
     for (const circle of circles) {
-      const dx = mouseX - circle.x;
-      const dy = mouseY - circle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance <= circle.radius) {
+      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
         draggingCircle_db = circle;
         draggingCircle = null;
         any = true;
@@ -899,13 +915,15 @@ function animate() {
   if (frameCount % 60 === 0) {  // 60フレームごとに再計算
     calculatePageRank();
   }
+  for (const circle of circles) {
+    circle.draw();
+  }
+  
   for (const connection of connections) {
     connection.draw();
     connection.applyForces();
   }
-  for (const circle of circles) {
-    circle.draw();
-  }
+
   // calculateElectrostaticForceAndMove()
   handleCollisions();
   requestAnimationFrame(animate);

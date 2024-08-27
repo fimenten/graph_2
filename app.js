@@ -559,27 +559,64 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-Circle.prototype.draw = function() {
+Circle.prototype.draw = function () {
+  const maxWidth = 150; // 長方形の最大幅
+  const padding = 10; // 長方形の内側の余白
+
+  // デフォルトのフォントスタイルを取得
+  const computedStyle = getComputedStyle(document.body);
+  const fontSize = parseInt(computedStyle.fontSize)*1.5;
+  const fontFamily = computedStyle.fontFamily;
+  const lineHeight = fontSize * 1.2; // 一般的な行の高さの比率
+
+  ctx.font = `${fontSize}px ${fontFamily}`;
+
+  // テキストを行に分割する
+  const words = this.name.split(' ');
+  let lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = ctx.measureText(currentLine + " " + word).width;
+    if (width < maxWidth - 2 * padding) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+
+  // 長方形のサイズを計算
+  const rectWidth = Math.min(ctx.measureText(this.name).width + 2 * padding, maxWidth);
+  const rectHeight = lines.length * lineHeight + 2 * padding;
+
+  // 長方形を描画
   ctx.beginPath();
-  ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+  ctx.rect(this.x - rectWidth / 2, this.y - rectHeight / 2, rectWidth, rectHeight);
   ctx.closePath();
   ctx.fillStyle = this.fillColor;
   ctx.fill();
   ctx.lineWidth = this.strokeWidth;
-  ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor; // Highlight selected circle
+  ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor;
   ctx.stroke();
-  this.drawCircleName();
-  if (this.pageRank) {
-    const minRadius = smaller_edge * SMALL_RADIUS;
-    const maxRadius = smaller_edge * LARGE_RADIUS;
-    this.radius = minRadius + (maxRadius - minRadius) * this.pageRank * circles.length;
-  }
+
+  // テキストを描画
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  lines.forEach((line, index) => {
+    const y = this.y - (lines.length - 1) * lineHeight / 2 + index * lineHeight;
+    ctx.fillText(line, this.x, y);
+  });
 
   // ページランクを表示
   if (this.pageRank) {
     ctx.fillStyle = "black";
-    ctx.font = "12px Arial";
-    ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + this.radius + 15);
+    ctx.font = `${fontSize * 0.85}px ${fontFamily}`; // ページランクのフォントサイズを少し小さくする
+    ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + rectHeight / 2 + fontSize);
   }
 };
 

@@ -20,7 +20,39 @@ let isDraggingCanvas = false;
 const SMALL_RADIUS = 1 / 20
 const MEDIUM_RADIUS = 1 / 20
 const LARGE_RADIUS = 1 / 20
+function generateUUID() {
+  // Generate a random 16-bit number as a string and pad with leading zeros if necessary
+  function random16Bit() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  }
 
+  // Construct the UUID by combining random 16-bit values
+  return (
+    random16Bit() + random16Bit() + '-' +
+    random16Bit() + '-' +
+    '4' + random16Bit().substr(0, 3) + '-' + // Ensure the version is '4'
+    (8 + (Math.random() * 4 | 0)).toString(16) + random16Bit().substr(0, 3) + '-' + // Ensure the variant is '8', '9', 'A', or 'B'
+    random16Bit() + random16Bit() + random16Bit()
+  );
+}
+
+function getSessionIdFromUrl(url) {
+  // Create a new URL object
+  const urlObj = new URL(url);
+
+  // Get the search parameters from the URL
+  const params = new URLSearchParams(urlObj.search);
+
+  // Retrieve the value of the 'sessionId' query parameter
+  const sessionId = params.get('sessionId');
+
+  return sessionId;
+}
+
+let sessionId = getSessionIdFromUrl(window.location.href);
+sessionId = sessionId ? sessionId : generateUUID()
+
+console.log(sessionId)
 
 function calculatePageRank(damping = 0.85, iterations = 20) {
   const n = circles.length;
@@ -76,13 +108,22 @@ function generateRandomCircles() {
     circle.y = y;
   }
 }
-function saveGraphToLocalStorage() {
+function saveGraphToLocalStorage(sessionIdSpecified = null) {
+  let sessionId = getSessionIdFromUrl(window.location.href);
+  sessionId = sessionId ? sessionId : generateUUID()
+  
+  if (sessionIdSpecified){
+    sessionIdSpecified = sessionIdSpecified
+  }else{
+    sessionIdSpecified = sessionId
+  }
   const data = {
     circles: circles,
     connections: connections,
   };
+  console.log(sessionIdSpecified)
   const jsonData = JSON.stringify(data);
-  localStorage.setItem("graphData", jsonData);
+  localStorage.setItem(sessionIdSpecified, jsonData);
 }
 
 function calculateElectrostaticForceAndMove() {
@@ -124,7 +165,7 @@ function calculateElectrostaticForceAndMove() {
 }
 
 function loadGraphFromLocalStorage() {
-  const jsonData = localStorage.getItem("graphData");
+  const jsonData = localStorage.getItem(sessionId);
   if (jsonData) {
     const data = JSON.parse(jsonData);
 
@@ -452,7 +493,7 @@ class Connection {
   constructor(circleA, circleB, k = 0.01) {
     this.circleA = circleA;
     this.circleB = circleB;
-    this.k = 0.00;
+    this.k = 0.0;
   }
 
 draw() {
@@ -693,11 +734,11 @@ Circle.prototype.draw = function () {
   });
 
   // ページランクを表示
-  if (this.pageRank) {
-    ctx.fillStyle = "black";
-    ctx.font = `${fontSize * 0.85}px ${fontFamily}`; // ページランクのフォントサイズを少し小さくする
-    ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + rectHeight / 2 + fontSize);
-  }
+  // if (this.pageRank) {
+  //   ctx.fillStyle = "black";
+  //   ctx.font = `${fontSize * 0.85}px ${fontFamily}`; // ページランクのフォントサイズを少し小さくする
+  //   ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + rectHeight / 2 + fontSize);
+  // }
 };
 
 canvas.addEventListener("contextmenu", (event) => {
@@ -969,10 +1010,10 @@ let frameCount = 0;
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  frameCount++;
-  if (frameCount % 60 === 0) {  // 60フレームごとに再計算
-    calculatePageRank();
-  }
+  // frameCount++;
+  // if (frameCount % 60 === 0) {  // 60フレームごとに再計算
+  //   calculatePageRank();
+  // }
   for (const circle of circles) {
     circle.draw();
   }

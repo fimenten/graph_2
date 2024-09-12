@@ -9,14 +9,83 @@
 <body>
   <canvas id="forceFieldGraph"></canvas>
   <script src="app.js"></script>
+  
+  <!-- Button Container -->
   <div class="button-container">
-  <button onclick="resetCanvas()">resetCanvas</button>
-  <button onclick="saveGraph()">Save Graph</button>
-  <button onclick="loadGraph()">Load Graph</button>
-  <button onclick="generateRandomCircles() ">Place Random Circle</button>
-  <a href="3d.html" class="turn-into-3d-btn">Turn into 3D</a>
+    <button onclick="resetCanvas()">resetCanvas</button>
+    <button onclick="saveGraph()">Save Graph</button>
+    <button onclick="loadGraph()">Load Graph</button>
+    <button onclick="generateRandomCircles()">Place Random Circle</button>
+    <a href="3d.html" class="turn-into-3d-btn">Turn into 3D</a>
 
-</div>
+    <!-- New Input Field, Dropdown, and Button for Specified Session ID -->
+    <input type="text" id="sessionIdInput" placeholder="Enter session ID" />
+    <button onclick="saveGraphWithInputSessionId()">Save to Specified Session ID</button>
 
+    <!-- Dropdown for Existing Session IDs -->
+    <select id="sessionIdDropdown" onchange="onSessionIdSelected()">
+      <option value="">Select a session ID</option>
+    </select>
+  </div>
+
+  <script>
+    // Function to dynamically create dropdown options for each sessionId stored in localStorage
+    function populateSessionIdDropdown() {
+      const dropdown = document.getElementById('sessionIdDropdown');
+
+      // Clear the dropdown first
+      dropdown.innerHTML = '<option value="">Select a session ID</option>';
+
+      // Iterate over the localStorage keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+
+        // Check if the key is a sessionId
+        if (true) {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = key;
+          dropdown.appendChild(option);
+        }
+      }
+    }
+
+    // Function to handle the selection of a sessionId from the dropdown
+    function onSessionIdSelected() {
+      const dropdown = document.getElementById('sessionIdDropdown');
+      const selectedSessionId = dropdown.value;
+      if (selectedSessionId) {
+        // Redirect to the page with the selected sessionId query
+        const currentUrl = window.location.href.split('?')[0]; // Get the current URL without query parameters
+        window.location.href = `${currentUrl}?sessionId=${selectedSessionId}`;
+      }
+    }
+
+    // Function to save graph to a specified session ID from the input field
+    function saveGraphWithInputSessionId() {
+      const sessionIdInput = document.getElementById('sessionIdInput').value;
+      if (sessionIdInput) {
+        saveGraphToLocalStorage(sessionIdInput);
+        alert('Graph saved with session ID: ' + sessionIdInput);
+        populateSessionIdDropdown(); // Refresh the dropdown after saving
+      } else {
+        alert('Please enter a session ID.');
+      }
+    }
+
+    // Function to save graph to localStorage
+    function saveGraphToLocalStorage(sessionIdSpecified = null) {
+      const idToUse = sessionIdSpecified || sessionId; // Use specified sessionId or default
+      const data = {
+        circles: circles, // Assuming 'circles' is defined somewhere in your script
+        connections: connections, // Assuming 'connections' is defined somewhere in your script
+      };
+      const jsonData = JSON.stringify(data);
+      localStorage.setItem(idToUse, jsonData);
+    }
+
+    // Call the function to populate the dropdown with session IDs on page load
+    populateSessionIdDropdown();
+  </script>
 </body>
 </html>

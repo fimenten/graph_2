@@ -1029,6 +1029,8 @@ function animate() {
 }
 window.onload = () => {
   loadGraphFromLocalStorage();
+  populateSessionIdDropdown();
+
 };
 
 animate();
@@ -1094,4 +1096,3 @@ function saveGraphToLocalStorage(sessionIdSpecified = null) {
 }
 
 // Call the function to populate the dropdown with session IDs on page load
-populateSessionIdDropdown();

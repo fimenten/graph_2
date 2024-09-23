@@ -2,96 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Force Field Graph</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #k-input {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+    }
+    #controls, #session-controls {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    button {
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #session-controls {
+      top: 150px; /* Adjust as needed */
+    }
+    a.turn-into-3d-btn {
+      padding: 5px 10px;
+      font-size: 14px;
+      text-decoration: none;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    a.turn-into-3d-btn:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-  <canvas id="forceFieldGraph"></canvas>
-  <script src="app.js"></script>
-  
-  <!-- Button Container -->
-  <div class="button-container">
-    <button onclick="resetCanvas()">resetCanvas</button>
-    <button onclick="saveGraph()">Save Graph</button>
-    <button onclick="loadGraph()">Load Graph</button>
-    <button onclick="generateRandomCircles()">Place Random Circle</button>
-    <a href="3d.html" class="turn-into-3d-btn">Turn into 3D</a>
+  <input type="number" id="k-input" value="0.01" step="0.01" min="0">
 
-    <!-- New Input Field, Dropdown, and Button for Specified Session ID -->
+  <!-- Control Buttons -->
+  <div id="controls">
+    <button id="save-button">Save Graph</button>
+    <button id="load-button">Load Graph</button>
+    <button id="reset-button">Reset Canvas</button>
+    <button id="place-random-button">Place Random Circle</button>
+    <a href="3d.html" class="turn-into-3d-btn">Turn into 3D</a>
+  </div>
+
+  <!-- Session Controls -->
+  <div id="session-controls">
+    <!-- Input Field for Specified Session ID -->
     <input type="text" id="sessionIdInput" placeholder="Enter session ID" />
-    <button onclick="saveGraphWithInputSessionId()">Save to Specified Session ID</button>
+    <button id="save-session-button">Save to Specified Session ID</button>
 
     <!-- Dropdown for Existing Session IDs -->
-    <select id="sessionIdDropdown" onchange="onSessionIdSelected()">
+    <select id="sessionIdDropdown">
       <option value="">Select a session ID</option>
     </select>
   </div>
 
-  <script>
-    // Function to dynamically create dropdown options for each sessionId stored in localStorage
-    function populateSessionIdDropdown() {
-      const dropdown = document.getElementById('sessionIdDropdown');
+  <canvas id="forceFieldGraph"></canvas>
 
-      // Clear the dropdown first
-      dropdown.innerHTML = '<option value="">Select a session ID</option>';
-
-      // Iterate over the localStorage keys
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-
-        // Check if the key is a sessionId
-        if (key.startsWith("graphSession")) {
-          const option = document.createElement('option');
-          option.value = key;
-          option.textContent = key;
-          dropdown.appendChild(option);
-        }
-      }
-    }
-
-    // Function to handle the selection of a sessionId from the dropdown
-    function onSessionIdSelected() {
-      const dropdown = document.getElementById('sessionIdDropdown');
-      const selectedSessionId = dropdown.value;
-      if (selectedSessionId) {
-        // Redirect to the page with the selected sessionId query
-        const currentUrl = window.location.href.split('?')[0]; // Get the current URL without query parameters
-        window.location.href = `${currentUrl}?sessionId=${selectedSessionId}`;
-      }
-    }
-
-    // Function to save graph to a specified session ID from the input field
-    function saveGraphWithInputSessionId() {
-      let sessionIdInput = document.getElementById('sessionIdInput').value;
-      if (sessionIdInput) {
-        if (!sessionIdInput.startsWith("graphSession")){
-          sessionIdInput = "graphSession" + sessionIdInput
-        }
-        saveGraphToLocalStorage(sessionIdInput);
-        alert('Graph saved with session ID: ' + sessionIdInput);
-        const currentUrl = window.location.href.split('?')[0]; // Get the current URL without query parameters
-        window.location.href = `${currentUrl}?sessionId=${sessionIdInput}`;
-        populateSessionIdDropdown(); // Refresh the dropdown after saving
-
-      } else {
-        alert('Please enter a session ID.');
-      }
-    }
-
-    // Function to save graph to localStorage
-    function saveGraphToLocalStorage(sessionIdSpecified = null) {
-      const idToUse = sessionIdSpecified || sessionId; // Use specified sessionId or default
-      const data = {
-        circles: circles, // Assuming 'circles' is defined somewhere in your script
-        connections: connections, // Assuming 'connections' is defined somewhere in your script
-      };
-      const jsonData = JSON.stringify(data);
-      localStorage.setItem(idToUse, jsonData);
-    }
-
-    // Call the function to populate the dropdown with session IDs on page load
-    populateSessionIdDropdown();
-  </script>
+  <!-- Include the compiled TypeScript here -->
+  <script type="module" src="dist/index.js"></script>
 </body>
 </html>

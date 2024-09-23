@@ -1,0 +1,15 @@
+{
+  "name": "graph_2",
+  "version": "1.0.0",
+  "description": "This is a web app that allows you to create an interactive force field graph. The graph consists of circles and connections between them, and allows you to add, remove, and move circles, as well as create and delete connections between them.",
+  "main": "3d.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

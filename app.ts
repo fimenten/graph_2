@@ -113,6 +113,7 @@ window.addEventListener("resize", () => {
   canvas.width = window.innerWidth - 100;
   canvas.height = window.innerHeight;
   smaller_edge = Math.min(canvas.width, canvas.height);
+  pauseAnimationDuringResize();
 });
 
 function generateRandomCircles(): void {
@@ -177,7 +178,7 @@ function calculateElectrostaticForceAndMove(): void {
 }
 
 function loadGraphFromLocalStorage(): void {
-  const jsonData = localStorage.getItem(sessionId);
+  const jsonData = localStorage.getItem(sessionId!);
   if (jsonData) {
     const data = JSON.parse(jsonData);
 
@@ -401,7 +402,12 @@ function loadGraph(): void {
       circles.length = 0;
       connections.length = 0;
 
-      for (const circleData of data.circles) {
+      // Check if this is the old format (has circles array) or new format
+      const circlesData = data.circles || [];
+      const connectionsData = data.connections || [];
+
+      // Load circles
+      for (const circleData of circlesData) {
         const circle = new Circle(
           circleData.x,
           circleData.y,
@@ -412,18 +418,33 @@ function loadGraph(): void {
           circleData.strokeColor,
           circleData.strokeWidth
         );
+        // Copy additional properties from old format if they exist
+        if (circleData.rectWidth) circle.rectWidth = circleData.rectWidth;
+        if (circleData.rectHeight) circle.rectHeight = circleData.rectHeight;
         circles.push(circle);
       }
 
-      for (const connectionData of data.connections) {
-        const circleA = circles.find(
-          (circle) => circle.id === connectionData.circleA.id
-        );
-        const circleB = circles.find(
-          (circle) => circle.id === connectionData.circleB.id
-        );
+      // Load connections - handle both old and new formats
+      for (const connectionData of connectionsData) {
+        let circleA: Circle | undefined;
+        let circleB: Circle | undefined;
+        let k = 0;
+
+        if (connectionData.circleA && connectionData.circleB) {
+          // New format: circleA and circleB are CircleData objects with id
+          circleA = circles.find(circle => circle.id === connectionData.circleA.id);
+          circleB = circles.find(circle => circle.id === connectionData.circleB.id);
+          k = connectionData.k || 0;
+        } else {
+          // Very old format or other format - try to match by properties
+          console.warn("Unsupported connection format, skipping connection");
+          continue;
+        }
+        
         if (circleA && circleB) {
-          const connection = new Connection(circleA, circleB, connectionData.k);
+          const connection = new Connection(circleA, circleB, k);
+          // Copy additional properties if they exist
+          if (connectionData.restLength) connection.restLength = connectionData.restLength;
           connections.push(connection);
         }
       }
@@ -551,8 +572,6 @@ class Circle {
       const maxRadius = smaller_edge * LARGE_RADIUS;
       this.radius = minRadius + (maxRadius - minRadius) * this.pageRank * circles.length;
     }
-    console.log(this.pageRank);
-    console.log(2);
 
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
@@ -577,7 +596,6 @@ class Circle {
   }
 
   drawCircleName(): void {
-    console.log(this.x);
     if (this.name) {
       const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
       ctx.font = `${fontSize}px Arial`;
@@ -622,14 +640,12 @@ class Connection {
   draw(): void {
     // Skip drawing if dimension is not visible
     if (this.dimension && !this.dimension.isVisible) {
-      console.log('Skipping connection draw - dimension not visible:', this.dimension.name);
       return;
     }
     
     // If connection has no dimension, assign current dimension
     if (!this.dimension && currentEdgeDimension) {
       this.dimension = currentEdgeDimension;
-      console.log('Assigned current dimension to connection:', this.dimension.name);
     }
 
     this.restLength = ((this.circleA.rectWidth || 0) + (this.circleB.rectWidth || 0)) / 2;
@@ -947,7 +963,6 @@ canvas.addEventListener("dblclick", (event: MouseEvent) => {
       if (isXYinTheRectangle(circle, mouseX, mouseY)) {
         draggingCircle_db = circle;
         draggingCircle = null;
-        console.log("testt");
         any = true;
         break;
       }
@@ -973,7 +988,6 @@ canvas.addEventListener("mousemove", (event: MouseEvent) => {
   const mouseY = event.clientY - rect.top;
 
   if (draggingCircle) {
-    console.log("mov");
     draggingCircle.x = mouseX;
     draggingCircle.y = mouseY;
     return;
@@ -1139,8 +1153,11 @@ canvas.addEventListener("touchend", (event: TouchEvent) => {
 });
 
 let frameCount: number = 0;
+let isAnimating: boolean = true;
 
 function animate(): void {
+  if (!isAnimating) return;
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (const circle of circles) {
@@ -1154,6 +1171,17 @@ function animate(): void {
 
   handleCollisionsRect();
   requestAnimationFrame(animate);
+}
+
+// Pause animation when window is being resized
+let resizeTimeout: number;
+function pauseAnimationDuringResize(): void {
+  isAnimating = false;
+  clearTimeout(resizeTimeout);
+  resizeTimeout = window.setTimeout(() => {
+    isAnimating = true;
+    animate();
+  }, 100);
 }
 
 window.onload = () => {
@@ -1209,7 +1237,7 @@ function saveGraphWithInputSessionId(): void {
 
 // Override saveGraphToLocalStorage to include edge dimensions
 function saveGraphToLocalStorageWithDimensions(sessionIdSpecified: string | null = null): void {
-  const idToUse = sessionIdSpecified || sessionId;
+  const idToUse = sessionIdSpecified || sessionId!;
   const data = {
     circles: circles.map(circle => circle.toData()),
     connections: connections.map(connection => connection.toData()),
@@ -1282,10 +1310,8 @@ function showEdgeDimensionContextMenu(x: number, y: number): void {
     dimensionOption.addEventListener('click', (e: MouseEvent) => {
       if (e.shiftKey) {
         dimension.isVisible = !dimension.isVisible;
-        console.log('Toggled dimension visibility:', dimension.name, 'isVisible:', dimension.isVisible);
       } else {
         currentEdgeDimension = dimension;
-        console.log('Selected dimension:', dimension.name);
       }
       hideEdgeDimensionContextMenu();
     });

@@ -850,7 +850,7 @@ Circle.prototype.draw = function (this: Circle): void {
   ctx.fillStyle = this.fillColor;
   ctx.fill();
   ctx.lineWidth = this.strokeWidth;
-  ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor;
+  ctx.strokeStyle = this === draggingCircle_db ? "green" : (this === selectedCircle ? "red" : this.strokeColor);
   ctx.stroke();
   ctx.closePath();
 
@@ -1018,6 +1018,7 @@ canvas.addEventListener("mouseup", (event: MouseEvent) => {
     }
   }
   draggingCircle = null;
+  draggingCircle_db = null;
   isDraggingCanvas = false;
 });
 

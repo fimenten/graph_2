@@ -57,7 +57,16 @@ function getSessionIdFromUrl(url: string): string | null {
   return sessionId;
 }
 
-let sessionId: string = getSessionIdFromUrl(window.location.href) || generateUUID();
+let sessionId: string | null = getSessionIdFromUrl(window.location.href);
+if (!sessionId) {
+  // URLにsessionIdがない場合、新しいUUIDを生成してリダイレクト
+  sessionId = generateUUID();
+  const currentUrl = window.location.href.split('?')[0]; // クエリパラメータを除去
+  const newUrl = `${currentUrl}?sessionId=${sessionId}`;
+  window.location.href = newUrl;
+}
+
+// この時点でsessionIdは確実に存在する
 
 console.log(sessionId);
 

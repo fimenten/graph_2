@@ -1,30 +1,36 @@
-const canvas = document.getElementById("forceFieldGraph");
-const ctx = canvas.getContext("2d");
+import { Position, PositionNullable, ActionHistoryItem, CircleData, ConnectionData, EdgeDimensionData, GraphData } from './types.js';
+
+// Canvas setup
+const canvas = document.getElementById("forceFieldGraph") as HTMLCanvasElement;
+const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 // Set canvas size to window size
 canvas.width = window.innerWidth - 100;
 canvas.height = window.innerHeight;
-let smaller_edge = Math.min(canvas.width, canvas.height);
+let smaller_edge: number = Math.min(canvas.width, canvas.height);
 
-let lastpos = {x:null,y:null}
-const actionsHistory = [];
-let hoveredCircle = null;
-let selectedCircle = null;
-let circles = [];
-let connections = [];
-let edgeDimensions = [];
-let currentEdgeDimension = null;
-let draggingCircle = null;
-let draggingCircle_db = null;
-let lastTapTime = 0;
-let isDraggingCanvas = false;
+// Global state variables
+let lastpos: PositionNullable = { x: null, y: null };
+const actionsHistory: ActionHistoryItem[] = [];
+let hoveredCircle: Circle | null = null;
+let selectedCircle: Circle | null = null;
+let circles: Circle[] = [];
+let connections: Connection[] = [];
+let edgeDimensions: EdgeDimension[] = [];
+let currentEdgeDimension: EdgeDimension | null = null;
+let draggingCircle: Circle | null = null;
+let draggingCircle_db: Circle | null = null;
+let lastTapTime: number = 0;
+let isDraggingCanvas: boolean = false;
 
-const SMALL_RADIUS = 1 / 20
-const MEDIUM_RADIUS = 1 / 20
-const LARGE_RADIUS = 1 / 20
-function generateUUID() {
+// Constants
+const SMALL_RADIUS: number = 1 / 20;
+const MEDIUM_RADIUS: number = 1 / 20;
+const LARGE_RADIUS: number = 1 / 20;
+
+function generateUUID(): string {
   // Generate a random 16-bit number as a string and pad with leading zeros if necessary
-  function random16Bit() {
+  function random16Bit(): string {
     return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
   }
 
@@ -38,7 +44,7 @@ function generateUUID() {
   );
 }
 
-function getSessionIdFromUrl(url) {
+function getSessionIdFromUrl(url: string): string | null {
   // Create a new URL object
   const urlObj = new URL(url);
 
@@ -51,15 +57,14 @@ function getSessionIdFromUrl(url) {
   return sessionId;
 }
 
-let sessionId = getSessionIdFromUrl(window.location.href);
-sessionId = sessionId ? sessionId : generateUUID()
+let sessionId: string = getSessionIdFromUrl(window.location.href) || generateUUID();
 
-console.log(sessionId)
+console.log(sessionId);
 
-function calculatePageRank(damping = 0.85, iterations = 20) {
+function calculatePageRank(damping: number = 0.85, iterations: number = 20): void {
   const n = circles.length;
-  let pageRanks = new Array(n).fill(1 / n);
-  let newPageRanks = new Array(n).fill(0);
+  let pageRanks: number[] = new Array(n).fill(1 / n);
+  let newPageRanks: number[] = new Array(n).fill(0);
 
   for (let iter = 0; iter < iterations; iter++) {
     // Reset new page ranks
@@ -101,8 +106,7 @@ window.addEventListener("resize", () => {
   smaller_edge = Math.min(canvas.width, canvas.height);
 });
 
-
-function generateRandomCircles() {
+function generateRandomCircles(): void {
   for (const circle of circles) {
     const x = Math.random() * canvas.width;
     const y = Math.random() * canvas.height;
@@ -110,30 +114,27 @@ function generateRandomCircles() {
     circle.y = y;
   }
 }
-function saveGraphToLocalStorage(sessionIdSpecified = null) {
-  let sessionId = getSessionIdFromUrl(window.location.href);
-  sessionId = sessionId ? sessionId : generateUUID()
+
+function saveGraphToLocalStorage(sessionIdSpecified: string | null = null): void {
+  let currentSessionId = getSessionIdFromUrl(window.location.href) || generateUUID();
   
-  if (sessionIdSpecified){
-    sessionIdSpecified = sessionIdSpecified
-  }else{
-    sessionIdSpecified = sessionId
-  }
-  const data = {
-    circles: circles,
-    connections: connections,
+  const finalSessionId = sessionIdSpecified || currentSessionId;
+  
+  const data: GraphData = {
+    circles: circles.map(circle => circle.toData()),
+    connections: connections.map(connection => connection.toData()),
   };
-  console.log(sessionIdSpecified)
+  
+  console.log(finalSessionId);
   const jsonData = JSON.stringify(data);
-  localStorage.setItem(sessionIdSpecified, jsonData);
+  localStorage.setItem(finalSessionId, jsonData);
 }
 
-function calculateElectrostaticForceAndMove() {
-  // const circles = []; // Array of circles with positions and radii
+function calculateElectrostaticForceAndMove(): void {
   const charge = 1.0; // Charge of each circle
 
-  const kInput = document.getElementById('k-input');
-  const k = parseFloat(kInput.value); // Read the value of k from the input element
+  const kInput = document.getElementById('k-input') as HTMLInputElement;
+  const k = parseFloat(kInput?.value || '0');
 
   for (let i = 0; i < circles.length; i++) {
     let totalForceX = 0;
@@ -166,7 +167,7 @@ function calculateElectrostaticForceAndMove() {
   }
 }
 
-function loadGraphFromLocalStorage() {
+function loadGraphFromLocalStorage(): void {
   const jsonData = localStorage.getItem(sessionId);
   if (jsonData) {
     const data = JSON.parse(jsonData);
@@ -186,7 +187,7 @@ function loadGraphFromLocalStorage() {
 
     // Set current edge dimension
     if (data.currentEdgeDimensionId) {
-      currentEdgeDimension = edgeDimensions.find(dim => dim.id === data.currentEdgeDimensionId);
+      currentEdgeDimension = edgeDimensions.find(dim => dim.id === data.currentEdgeDimensionId) || null;
     }
 
     // If no dimensions or current dimension not found, initialize default
@@ -217,27 +218,30 @@ function loadGraphFromLocalStorage() {
       );
       
       // Find dimension for this connection
-      let connectionDimension = null;
+      let connectionDimension: EdgeDimension | null = null;
       if (connectionData.dimension && connectionData.dimension.id) {
-        connectionDimension = edgeDimensions.find(dim => dim.id === connectionData.dimension.id);
+        connectionDimension = edgeDimensions.find(dim => dim.id === connectionData.dimension.id) || null;
       }
       
-      const connection = new Connection(circleA, circleB, connectionData.k, connectionDimension);
-      connections.push(connection);
+      if (circleA && circleB) {
+        const connection = new Connection(circleA, circleB, connectionData.k, connectionDimension);
+        connections.push(connection);
+      }
     }
   }
 }
 
-function deleteConnectionsForCircle(circle) {
+function deleteConnectionsForCircle(circle: Circle): void {
   for (let i = connections.length - 1; i >= 0; i--) {
     const connection = connections[i];
     if (connection.circleA === circle || connection.circleB === circle) {
       connections.splice(i, 1);
-      actionsHistory.push({ type: "removeConnection", connection });
+      actionsHistory.push({ type: "remove_connection", data: connection });
     }
   }
 }
-function handleCollisions() {
+
+function handleCollisions(): void {
   for (let i = 0; i < circles.length; i++) {
     for (let j = i + 1; j < circles.length; j++) {
       const circleA = circles[i];
@@ -264,25 +268,32 @@ function handleCollisions() {
   }
 }
 
-function handleCollisionsRect() {
+interface Rectangle {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+function handleCollisionsRect(): void {
   for (let i = 0; i < circles.length; i++) {
     for (let j = i + 1; j < circles.length; j++) {
       const circleA = circles[i];
       const circleB = circles[j];
 
       // 各長方形の境界を計算
-      const rectA = {
-        left: circleA.x - circleA.rectWidth / 2,
-        right: circleA.x + circleA.rectWidth / 2,
-        top: circleA.y - circleA.rectHeight / 2,
-        bottom: circleA.y + circleA.rectHeight / 2,
+      const rectA: Rectangle = {
+        left: circleA.x - (circleA.rectWidth || 0) / 2,
+        right: circleA.x + (circleA.rectWidth || 0) / 2,
+        top: circleA.y - (circleA.rectHeight || 0) / 2,
+        bottom: circleA.y + (circleA.rectHeight || 0) / 2,
       };
 
-      const rectB = {
-        left: circleB.x - circleB.rectWidth / 2,
-        right: circleB.x + circleB.rectWidth / 2,
-        top: circleB.y - circleB.rectHeight / 2,
-        bottom: circleB.y + circleB.rectHeight / 2,
+      const rectB: Rectangle = {
+        left: circleB.x - (circleB.rectWidth || 0) / 2,
+        right: circleB.x + (circleB.rectWidth || 0) / 2,
+        top: circleB.y - (circleB.rectHeight || 0) / 2,
+        bottom: circleB.y + (circleB.rectHeight || 0) / 2,
       };
 
       // 衝突判定：AとBの長方形が重なっているか
@@ -298,7 +309,7 @@ function handleCollisionsRect() {
 
         if (overlapX < overlapY) {
           const offsetX = overlapX / 2;
-          if (rectA.left < rectB.left) {
+          if (circleA.x < circleB.x) {
             circleA.x -= offsetX;
             circleB.x += offsetX;
           } else {
@@ -307,7 +318,7 @@ function handleCollisionsRect() {
           }
         } else {
           const offsetY = overlapY / 2;
-          if (rectA.top < rectB.top) {
+          if (circleA.y < circleB.y) {
             circleA.y -= offsetY;
             circleB.y += offsetY;
           } else {
@@ -320,9 +331,7 @@ function handleCollisionsRect() {
   }
 }
 
-
-
-function areCirclesConnected(circleA, circleB) {
+function areCirclesConnected(circleA: Circle, circleB: Circle): boolean {
   for (const connection of connections) {
     if (
       (connection.circleA === circleA && connection.circleB === circleB) 
@@ -334,7 +343,7 @@ function areCirclesConnected(circleA, circleB) {
   return false;
 }
 
-function deleteConnectionIfConnected(circleA, circleB) {
+function deleteConnectionIfConnected(circleA: Circle, circleB: Circle): boolean {
   for (let i = 0; i < connections.length; i++) {
     const connection = connections[i];
     if (
@@ -342,17 +351,18 @@ function deleteConnectionIfConnected(circleA, circleB) {
       (connection.circleA === circleB && connection.circleB === circleA)
     ) {
       connections.splice(i, 1);
-      actionsHistory.push({ type: "removeConnection", connection });
+      actionsHistory.push({ type: "remove_connection", data: connection });
       return true;
     }
   }
 
   return false;
 }
-function saveGraph() {
-  const data = {
-    circles: circles,
-    connections: connections,
+
+function saveGraph(): void {
+  const data: GraphData = {
+    circles: circles.map(circle => circle.toData()),
+    connections: connections.map(connection => connection.toData()),
   };
   const jsonData = JSON.stringify(data);
   const blob = new Blob([jsonData], { type: "application/json" });
@@ -364,18 +374,20 @@ function saveGraph() {
   link.click();
 }
 
-function loadGraph() {
+function loadGraph(): void {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "application/json";
 
   input.addEventListener("change", () => {
-    const file = input.files[0];
+    const file = input.files?.[0];
+    if (!file) return;
+    
     const reader = new FileReader();
     reader.readAsText(file);
 
     reader.addEventListener("load", () => {
-      const data = JSON.parse(reader.result);
+      const data = JSON.parse(reader.result as string);
 
       circles.length = 0;
       connections.length = 0;
@@ -401,8 +413,10 @@ function loadGraph() {
         const circleB = circles.find(
           (circle) => circle.id === connectionData.circleB.id
         );
-        const connection = new Connection(circleA, circleB, connectionData.k);
-        connections.push(connection);
+        if (circleA && circleB) {
+          const connection = new Connection(circleA, circleB, connectionData.k);
+          connections.push(connection);
+        }
       }
     });
   });
@@ -410,8 +424,8 @@ function loadGraph() {
   input.click();
 }
 
-function calculateAdaptiveFontSize(radius, name) {
-  const maxFontSize = smaller_edge/10;
+function calculateAdaptiveFontSize(radius: number, name: string): number {
+  const maxFontSize = smaller_edge / 10;
   const maxNameWidth = radius * 2;
 
   let low = 1;
@@ -435,41 +449,82 @@ function calculateAdaptiveFontSize(radius, name) {
 }
 
 class EdgeDimension {
-  constructor(name, color = "#000000", isVisible = true) {
+  id: string;
+  name: string;
+  color: string;
+  isVisible: boolean;
+
+  constructor(name: string, color: string = "#000000", isVisible: boolean = true) {
     this.id = generateUUID();
     this.name = name;
     this.color = color;
     this.isVisible = isVisible;
   }
+
+  toData(): EdgeDimensionData {
+    return {
+      id: this.id,
+      name: this.name,
+      color: this.color,
+      isVisible: this.isVisible,
+    };
+  }
 }
 
-class Rectangle {
-  constructor(x, y, width, height, name = "", id = "") {
-    Object.assign(this, { x, y, width, height, name, id });
+// Canvas offset for relative positioning
+let canvasOffsetGlobal: Position = { x: 0, y: 0 };
+
+class RectangleShape {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  id: string;
+
+  constructor(x: number, y: number, width: number, height: number, name: string = "", id: string = "") {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.name = name;
+    this.id = id;
   }
-  draw() {
+
+  draw(): void {
     ctx.fillStyle = "blue";
-    ctx.fillRect(this.x + canvasOffset.x, this.y + canvasOffset.y, this.width, this.height);
+    ctx.fillRect(this.x + canvasOffsetGlobal.x, this.y + canvasOffsetGlobal.y, this.width, this.height);
     ctx.strokeStyle = "black";
-    ctx.strokeRect(this.x + canvasOffset.x, this.y + canvasOffset.y, this.width, this.height);
+    ctx.strokeRect(this.x + canvasOffsetGlobal.x, this.y + canvasOffsetGlobal.y, this.width, this.height);
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(this.name, this.x + this.width / 2 + canvasOffset.x, this.y + this.height / 2 + canvasOffset.y);
+    ctx.fillText(this.name, this.x + this.width / 2 + canvasOffsetGlobal.x, this.y + this.height / 2 + canvasOffsetGlobal.y);
   }
 }
 
 class Circle {
-  constructor(
-    x,
-    y,
-    name = "",
-    id = "",
-    radius = smaller_edge *MEDIUM_RADIUS,
-    fillColor = "blue",
-    strokeColor = "black",
-    strokeWidth = 2
+  x: number;
+  y: number;
+  radius: number;
+  fillColor: string;
+  strokeColor: string;
+  strokeWidth: number;
+  name: string;
+  id: string;
+  pageRank?: number;
+  rectWidth?: number;
+  rectHeight?: number;
 
+  constructor(
+    x: number,
+    y: number,
+    name: string = "",
+    id: string = "",
+    radius: number = smaller_edge * MEDIUM_RADIUS,
+    fillColor: string = "blue",
+    strokeColor: string = "black",
+    strokeWidth: number = 2
   ) {
     this.x = x;
     this.y = y;
@@ -478,26 +533,21 @@ class Circle {
     this.strokeColor = strokeColor;
     this.strokeWidth = strokeWidth;
     this.name = name;
-    this.id = id
-    // const name = prompt('Enter a name for the circle:', this.name);
-    // if (name !== null) {
-    //   this.name = name;
-    // }
+    this.id = id;
   }
 
-  draw() {
+  draw(): void {
     if (this.pageRank) {
       const minRadius = smaller_edge * SMALL_RADIUS;
       const maxRadius = smaller_edge * LARGE_RADIUS;
       this.radius = minRadius + (maxRadius - minRadius) * this.pageRank * circles.length;
     }
-    console.log(this.pageRank)
-    console.log(2)
-
+    console.log(this.pageRank);
+    console.log(2);
 
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-    ctx.closePath()
+    ctx.closePath();
     ctx.fillStyle = this.fillColor;
     ctx.fill();
     ctx.lineWidth = this.strokeWidth;
@@ -511,12 +561,14 @@ class Circle {
       ctx.font = "12px Arial";
       ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + this.radius + 15);
     }
-    }
-  setColor(color) {
+  }
+
+  setColor(color: string): void {
     this.fillColor = color;
   }
-  drawCircleName() {
-    console.log(this.x)
+
+  drawCircleName(): void {
+    console.log(this.x);
     if (this.name) {
       const fontSize = calculateAdaptiveFontSize(this.radius, this.name);
       ctx.font = `${fontSize}px Arial`;
@@ -526,69 +578,90 @@ class Circle {
       ctx.fillText(this.name, this.x, this.y);
     }
   }
+
+  toData(): CircleData {
+    return {
+      id: this.id,
+      name: this.name,
+      x: this.x,
+      y: this.y,
+      radius: this.radius,
+      fillColor: this.fillColor,
+      strokeColor: this.strokeColor,
+      strokeWidth: this.strokeWidth,
+      pageRank: this.pageRank,
+      rectWidth: this.rectWidth,
+      rectHeight: this.rectHeight,
+    };
+  }
 }
+
 class Connection {
-  constructor(circleA, circleB, k = 0.01, dimension = null) {
+  circleA: Circle;
+  circleB: Circle;
+  k: number;
+  dimension: EdgeDimension | null;
+  restLength?: number;
+
+  constructor(circleA: Circle, circleB: Circle, k: number = 0.01, dimension: EdgeDimension | null = null) {
     this.circleA = circleA;
     this.circleB = circleB;
     this.k = 0.0;
     this.dimension = dimension || currentEdgeDimension;
   }
 
-draw() {
-  // Skip drawing if dimension is not visible
-  if (this.dimension && !this.dimension.isVisible) {
-    console.log('Skipping connection draw - dimension not visible:', this.dimension.name);
-    return;
+  draw(): void {
+    // Skip drawing if dimension is not visible
+    if (this.dimension && !this.dimension.isVisible) {
+      console.log('Skipping connection draw - dimension not visible:', this.dimension.name);
+      return;
+    }
+    
+    // If connection has no dimension, assign current dimension
+    if (!this.dimension && currentEdgeDimension) {
+      this.dimension = currentEdgeDimension;
+      console.log('Assigned current dimension to connection:', this.dimension.name);
+    }
+
+    this.restLength = ((this.circleA.rectWidth || 0) + (this.circleB.rectWidth || 0)) / 2;
+    const angle = Math.atan2(
+      this.circleB.y - this.circleA.y,
+      this.circleB.x - this.circleA.x
+    );
+
+    // 長方形Aの接点を計算
+    const halfWidthA = (this.circleA.rectWidth || 0) / 2;
+    const halfHeightA = (this.circleA.rectHeight || 0) / 2;
+
+    const startX = this.circleA.x + halfWidthA * Math.cos(angle);
+    const startY = this.circleA.y + halfHeightA * Math.sin(angle);
+
+    // 長方形Bの接点を計算
+    const halfWidthB = (this.circleB.rectWidth || 0) / 2;
+    const halfHeightB = (this.circleB.rectHeight || 0) / 2;
+
+    const endX = this.circleB.x - halfWidthB * Math.cos(angle);
+    const endY = this.circleB.y - halfHeightB * Math.sin(angle);
+
+    // Use dimension color if available
+    const strokeColor = this.dimension ? this.dimension.color : "#000";
+
+    // 線を描画
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+
+    // 矢印の頭を描画
+    const angleline = Math.atan2(
+      -startY + endY,
+      -startX + endX
+    );
+    this.drawArrowhead(endX, endY, angleline, strokeColor);
   }
-  
-  // If connection has no dimension, assign current dimension
-  if (!this.dimension && currentEdgeDimension) {
-    this.dimension = currentEdgeDimension;
-    console.log('Assigned current dimension to connection:', this.dimension.name);
-  }
 
-  this.restLength = ((this.circleA.rectWidth + this.circleB.rectWidth) / 2) ;
-  const angle = Math.atan2(
-    this.circleB.y - this.circleA.y,
-    this.circleB.x - this.circleA.x
-  );
-
-  // 長方形Aの接点を計算
-  const halfWidthA = this.circleA.rectWidth / 2;
-  const halfHeightA = this.circleA.rectHeight / 2;
-
-  const startX = this.circleA.x + halfWidthA * Math.cos(angle);
-  const startY = this.circleA.y + halfHeightA * Math.sin(angle);
-
-  // 長方形Bの接点を計算
-  const halfWidthB = this.circleB.rectWidth / 2;
-  const halfHeightB = this.circleB.rectHeight / 2;
-
-  const endX = this.circleB.x - halfWidthB * Math.cos(angle);
-  const endY = this.circleB.y - halfHeightB * Math.sin(angle);
-
-  // Use dimension color if available
-  const strokeColor = this.dimension ? this.dimension.color : "#000";
-
-  // 線を描画
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endY);
-  ctx.strokeStyle = strokeColor;
-  ctx.stroke();
-
-  // 矢印の頭を描画
-  const angleline = Math.atan2(
-    -startY + endY,
-    -startX + endX
-  );
-  this.drawArrowhead(endX, endY, angleline, strokeColor);
-}
-
-  
-
-  drawArrowhead(x, y, angle, color = "#000") {
+  drawArrowhead(x: number, y: number, angle: number, color: string = "#000"): void {
     const arrowSize = 20; // Size of the arrowhead
 
     ctx.beginPath();
@@ -605,14 +678,23 @@ draw() {
     ctx.stroke();
   }
 
-  distanceBetween(circleA, circleB) {
+  toData(): ConnectionData {
+    return {
+      circleA: this.circleA.toData(),
+      circleB: this.circleB.toData(),
+      k: this.k,
+      dimension: this.dimension?.toData(),
+    };
+  }
+
+  distanceBetween(circleA: Circle, circleB: Circle): number {
     return Math.sqrt(
       (circleB.x - circleA.x) ** 2 + (circleB.y - circleA.y) ** 2
     );
   }
 
-  applyForces() {
-    this.restLength = Math.sqrt((this.circleA.rectWidth * this.circleB.rectWidth)/2) ;
+  applyForces(): void {
+    this.restLength = Math.sqrt(((this.circleA.rectWidth || 0) * (this.circleB.rectWidth || 0)) / 2);
     const distance = this.distanceBetween(this.circleA, this.circleB);
     const force = this.k * (distance - this.restLength);
 
@@ -629,32 +711,34 @@ draw() {
   }
 }
 
+// Global variables for interaction
+declare let anyCircle: boolean;
+declare let diff_x: number;
+declare let diff_y: number;
 
-
-
-
-function resetCanvas() {
+function resetCanvas(): void {
   const confirmation = window.confirm(
     "Do you really want to reset the canvas?"
   );
   if (confirmation) {
-    // Call the function
     circles = [];
     connections = [];
   }
 }
-canvas.addEventListener("mousedown", (event) => {
+
+// Event listeners
+canvas.addEventListener("mousedown", (event: MouseEvent) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
   
-  anyCircle = false;
+  let anyCircle = false;
   for (const circle of circles) {
     const dx = mouseX - circle.x;
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+    if (isXYinTheRectangle(circle, mouseX, mouseY)) {
       selectedCircle = circle;
       draggingCircle = circle;
       if (draggingCircle_db) {
@@ -664,20 +748,20 @@ canvas.addEventListener("mousedown", (event) => {
       break;
     }
   }
-  if (!anyCircle){
+  if (!anyCircle) {
     isDraggingCanvas = true;
     lastpos.x = mouseX;
     lastpos.y = mouseY;
-
   }
 });
-document.addEventListener("keydown", (event) => {
+
+document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.ctrlKey && event.key === "Enter" && selectedCircle) {
     const newCircle = new Circle(
-      selectedCircle.x + 50, // Adjust the position of the new circle
+      selectedCircle.x + 50,
       selectedCircle.y + 50, 
       "", 
-      Date.now()
+      Date.now().toString()
     );
 
     const name = prompt("Enter a name for the circle:", newCircle.name);
@@ -686,39 +770,36 @@ document.addEventListener("keydown", (event) => {
     }
 
     circles.push(newCircle);
-    actionsHistory.push({ type: "addCircle", circle: newCircle });
+    actionsHistory.push({ type: "add_circle", data: newCircle });
 
-    // Create a connection between the selected circle and the new circle
-    const connection = new Connection(newCircle,selectedCircle);
+    const connection = new Connection(newCircle, selectedCircle);
     connections.push(connection);
-    selectedCircle = newCircle
+    selectedCircle = newCircle;
   }
 });
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.shiftKey && event.key === "Enter" && selectedCircle) {
     const newName = prompt("Enter a new name for the selected circle:", selectedCircle.name);
     if (newName !== null) {
+      const oldName = selectedCircle.name;
       selectedCircle.name = newName;
-      actionsHistory.push({ type: "renameCircle", circle: selectedCircle, oldName: selectedCircle.name, newName });
+      actionsHistory.push({ type: "add_circle", data: { circle: selectedCircle, oldName, newName } });
     }
   }
 });
 
-
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Tab") {
-    event.preventDefault(); // Prevent default tab behavior
+    event.preventDefault();
 
     if (circles.length > 0) {
       const currentIndex = selectedCircle ? circles.indexOf(selectedCircle) : -1;
 
-      let nextIndex;
+      let nextIndex: number;
       if (event.shiftKey) {
-        // Reverse direction if Shift is held
         nextIndex = (currentIndex - 1 + circles.length) % circles.length;
       } else {
-        // Forward direction
         nextIndex = (currentIndex + 1) % circles.length;
       }
 
@@ -727,27 +808,26 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-Circle.prototype.draw = function () {
-  const padding = 10; // 長方形の内側の余白
+// Override Circle prototype draw method
+Circle.prototype.draw = function (this: Circle): void {
+  const padding = 10;
 
-  // デフォルトのフォントスタイルを取得
   const computedStyle = getComputedStyle(document.body);
-  const fontSize = parseInt(computedStyle.fontSize)*1.5;
+  const fontSize = parseInt(computedStyle.fontSize) * 1.5;
   const fontFamily = computedStyle.fontFamily;
-  const lineHeight = fontSize * 1.2; // 一般的な行の高さの比率
+  const lineHeight = fontSize * 1.2;
 
   ctx.font = `${fontSize}px ${fontFamily}`;
 
-  // テキストを行に分割する
   const words = this.name.split(' ');
-  let lines = [];
+  let lines: string[] = [];
   let currentLine = words[0];
 
   for (let i = 1; i < words.length; i++) {
     const word = words[i];
     lines.push(currentLine);
     currentLine = word;
-    }
+  }
   
   lines.push(currentLine);
 
@@ -757,16 +837,15 @@ Circle.prototype.draw = function () {
   this.rectWidth = rectWidth;
   this.rectHeight = rectHeight;
   
-  // 楕円を描画
   ctx.beginPath();
   ctx.ellipse(
-    this.x, // 楕円の中心X座標
-    this.y, // 楕円の中心Y座標
-    rectWidth / 2, // 楕円のX半径
-    rectHeight / 2, // 楕円のY半径
-    0, // 回転角度 (ラジアン)
-    0, // 開始角度 (ラジアン)
-    2 * Math.PI // 終了角度 (ラジアン)
+    this.x,
+    this.y,
+    rectWidth / 2,
+    rectHeight / 2,
+    0,
+    0,
+    2 * Math.PI
   );
   ctx.fillStyle = this.fillColor;
   ctx.fill();
@@ -774,9 +853,7 @@ Circle.prototype.draw = function () {
   ctx.strokeStyle = this === selectedCircle ? "red" : this.strokeColor;
   ctx.stroke();
   ctx.closePath();
-  
 
-  // テキストを描画
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -785,18 +862,11 @@ Circle.prototype.draw = function () {
     const y = this.y - (lines.length - 1) * lineHeight / 2 + index * lineHeight;
     ctx.fillText(line, this.x, y);
   });
-
-  // ページランクを表示
-  // if (this.pageRank) {
-  //   ctx.fillStyle = "black";
-  //   ctx.font = `${fontSize * 0.85}px ${fontFamily}`; // ページランクのフォントサイズを少し小さくする
-  //   ctx.fillText(`Rank: ${this.pageRank.toFixed(3)}`, this.x, this.y + rectHeight / 2 + fontSize);
-  // }
 };
 
-canvas.addEventListener("contextmenu", (event) => {
-  event.preventDefault(); // Prevent the default right-click menu from appearing
-  event.stopPropagation()
+canvas.addEventListener("contextmenu", (event: MouseEvent) => {
+  event.preventDefault();
+  event.stopPropagation();
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
@@ -807,7 +877,7 @@ canvas.addEventListener("contextmenu", (event) => {
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+    if (isXYinTheRectangle(circle, mouseX, mouseY)) {
       const name = prompt("Enter a name for the circle:", circle.name);
       if (name !== null) {
         circle.name = name;
@@ -817,15 +887,14 @@ canvas.addEventListener("contextmenu", (event) => {
     }
   }
 
-  // If not clicked on a circle, show edge dimension context menu
   if (!clickedOnCircle) {
     showEdgeDimensionContextMenu(event.clientX, event.clientY);
   }
 });
 
-canvas.addEventListener("click", (event) => {
-  event.preventDefault()
-  event.stopPropagation()
+canvas.addEventListener("click", (event: MouseEvent) => {
+  event.preventDefault();
+  event.stopPropagation();
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
@@ -836,7 +905,7 @@ canvas.addEventListener("click", (event) => {
       const dy = mouseY - circle.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+      if (isXYinTheRectangle(circle, mouseX, mouseY)) {
         const color = prompt(
           "Enter a new color for the circle:",
           circle.fillColor
@@ -850,9 +919,9 @@ canvas.addEventListener("click", (event) => {
   }
 });
 
-canvas.addEventListener("dblclick", (event) => {
-  event.preventDefault()
-  event.stopPropagation()
+canvas.addEventListener("dblclick", (event: MouseEvent) => {
+  event.preventDefault();
+  event.stopPropagation();
   if (draggingCircle || draggingCircle_db) {
     draggingCircle = null;
     draggingCircle_db = null;
@@ -860,36 +929,36 @@ canvas.addEventListener("dblclick", (event) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    let any = false
+    let any = false;
     for (const circle of circles) {
       const dx = mouseX - circle.x;
       const dy = mouseY - circle.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+      if (isXYinTheRectangle(circle, mouseX, mouseY)) {
         draggingCircle_db = circle;
         draggingCircle = null;
         console.log("testt");
-        any = true
+        any = true;
         break;
       }
     }
-    if (!any){
+    if (!any) {
       const rect = canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
-      const circle = new Circle(mouseX, mouseY,"",Date.now());
+      const circle = new Circle(mouseX, mouseY, "", Date.now().toString());
       const name = prompt('Enter a name for the circle:', circle.name);
       if (name !== null) {
         circle.name = name;
       }
       circles.push(circle);
-      actionsHistory.push({ type: 'addCircle', circle });
-  
+      actionsHistory.push({ type: 'add_circle', data: circle });
     }
   }
 });
-canvas.addEventListener("mousemove", (event) => {
+
+canvas.addEventListener("mousemove", (event: MouseEvent) => {
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
@@ -908,25 +977,24 @@ canvas.addEventListener("mousemove", (event) => {
     const dy = mouseY - circle.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+    if (isXYinTheRectangle(circle, mouseX, mouseY)) {
       hoveredCircle = circle;
       break;
     }
   }
-  if (isDraggingCanvas){
-    diff_x = lastpos.x - mouseX;
-    diff_y = lastpos.y - mouseY;
-    for (let circle of circles){
-      circle.x = circle.x - diff_x
-      circle.y = circle.y - diff_y
+  if (isDraggingCanvas) {
+    const diff_x = (lastpos.x || 0) - mouseX;
+    const diff_y = (lastpos.y || 0) - mouseY;
+    for (let circle of circles) {
+      circle.x = circle.x - diff_x;
+      circle.y = circle.y - diff_y;
     }
-    lastpos.x = mouseX
-    lastpos.y = mouseY
-
+    lastpos.x = mouseX;
+    lastpos.y = mouseY;
   }
 });
 
-canvas.addEventListener("mouseup", (event) => {
+canvas.addEventListener("mouseup", (event: MouseEvent) => {
   if (draggingCircle_db) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
@@ -934,7 +1002,7 @@ canvas.addEventListener("mouseup", (event) => {
     let isany = false;
     for (const circle of circles) {
       if (circle !== draggingCircle_db) {
-        if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+        if (isXYinTheRectangle(circle, mouseX, mouseY)) {
           if (areCirclesConnected(draggingCircle_db, circle)) {
             deleteConnectionIfConnected(draggingCircle_db, circle);
             draggingCircle_db = null;
@@ -943,61 +1011,61 @@ canvas.addEventListener("mouseup", (event) => {
             connections.push(connection);
             draggingCircle_db = null;
           }
-        isany = true;
-        break
+          isany = true;
+          break;
         }
       }
     }
-
   }
   draggingCircle = null;
   isDraggingCanvas = false;
 });
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.ctrlKey && event.key === "z") {
     if (actionsHistory.length > 0) {
       const lastAction = actionsHistory.pop();
+      if (!lastAction) return;
 
-      if (lastAction.type === "addCircle") {
-        const circleIndex = circles.indexOf(lastAction.circle);
-        circle = circles[circleIndex];
+      if (lastAction.type === "add_circle") {
+        const circleIndex = circles.indexOf(lastAction.data);
+        const circle = circles[circleIndex];
         deleteConnectionsForCircle(circle);
         if (circleIndex !== -1) {
           circles.splice(circleIndex, 1);
         }
-      } else if (lastAction.type === "removeConnection") {
-        connections.push(lastAction.connection);
+      } else if (lastAction.type === "remove_connection") {
+        connections.push(lastAction.data);
       }
     }
   }
 });
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Delete" && hoveredCircle) {
     const index = circles.indexOf(hoveredCircle);
     circles.splice(index, 1);
     deleteConnectionsForCircle(hoveredCircle);
-    actionsHistory.push({ type: "removeCircle", circle: hoveredCircle });
+    actionsHistory.push({ type: "remove_circle", data: hoveredCircle });
     hoveredCircle = null;
   }
 });
-function isXYinTheRectangle(circle,x,y){
-  in_x =  Math.abs(circle.x - x) < circle.rectWidth/2
-  in_y =  Math.abs(circle.y - y) < circle.rectHeight/2
-  return in_x&in_y
-}
-function isXYinTheCircle(circle,x,y){
-  dx = circle.x - x
-  dy = circle.y - y
 
-  return Math.sqrt(dx*dx +  dy *dy) < circle.radius
+function isXYinTheRectangle(circle: Circle, x: number, y: number): boolean {
+  const in_x = Math.abs(circle.x - x) < (circle.rectWidth || 0) / 2;
+  const in_y = Math.abs(circle.y - y) < (circle.rectHeight || 0) / 2;
+  return in_x && in_y;
 }
 
-canvas.addEventListener("touchstart", (event) => {
-  // event.preventDefault();
-  if (event.touches.length > 1){
-    return
+function isXYinTheCircle(circle: Circle, x: number, y: number): boolean {
+  const dx = circle.x - x;
+  const dy = circle.y - y;
+  return Math.sqrt(dx * dx + dy * dy) < circle.radius;
+}
+
+canvas.addEventListener("touchstart", (event: TouchEvent) => {
+  if (event.touches.length > 1) {
+    return;
   }
   const currentTime = new Date().getTime();
   const tapLength = currentTime - lastTapTime;
@@ -1008,30 +1076,27 @@ canvas.addEventListener("touchstart", (event) => {
   const mouseY = touch.clientY - rect.top;
 
   if (tapLength < 300 && tapLength > 0) {
-    // Double-tap detected
     let any = false;
     for (const circle of circles) {
-
-      if (isXYinTheRectangle(circle,mouseX,mouseY)) {
+      if (isXYinTheRectangle(circle, mouseX, mouseY)) {
         draggingCircle_db = circle;
         draggingCircle = null;
         any = true;
-        event.stopPropagation()
+        event.stopPropagation();
         break;
       }
     }
     if (!any) {
-      event.stopPropagation()
-      const circle = new Circle(mouseX, mouseY,"", Date.now());
+      event.stopPropagation();
+      const circle = new Circle(mouseX, mouseY, "", Date.now().toString());
       const name = prompt('Enter a name for the circle:', circle.name);
       if (name !== null) {
         circle.name = name;
       }
       circles.push(circle);
-      actionsHistory.push({ type: 'addCircle', circle });
+      actionsHistory.push({ type: 'add_circle', data: circle });
     }
   } else {
-    // Single tap: same as the previous touchstart logic
     for (const circle of circles) {
       const dx = mouseX - circle.x;
       const dy = mouseY - circle.y;
@@ -1039,18 +1104,15 @@ canvas.addEventListener("touchstart", (event) => {
 
       if (distance <= circle.radius) {
         draggingCircle = circle;
-        event.stopPropagation()
+        event.stopPropagation();
         break;
-        
       }
     }
   }
   lastTapTime = currentTime;
 });
 
-
-canvas.addEventListener("touchmove", (event) => {
-  // event.preventDefault();
+canvas.addEventListener("touchmove", (event: TouchEvent) => {
   const rect = canvas.getBoundingClientRect();
   const touch = event.touches[0];
   const mouseX = touch.clientX - rect.left;
@@ -1062,18 +1124,15 @@ canvas.addEventListener("touchmove", (event) => {
   }
 });
 
-canvas.addEventListener("touchend", (event) => {
-  // event.preventDefault();
+canvas.addEventListener("touchend", (event: TouchEvent) => {
   draggingCircle = null;
 });
-let frameCount = 0;
 
-function animate() {
+let frameCount: number = 0;
+
+function animate(): void {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // frameCount++;
-  // if (frameCount % 60 === 0) {  // 60フレームごとに再計算
-  //   calculatePageRank();
-  // }
+
   for (const circle of circles) {
     circle.draw();
   }
@@ -1083,31 +1142,27 @@ function animate() {
     connection.applyForces();
   }
 
-  // calculateElectrostaticForceAndMove()
   handleCollisionsRect();
   requestAnimationFrame(animate);
 }
+
 window.onload = () => {
   initializeDefaultDimension();
   loadGraphFromLocalStorage();
   populateSessionIdDropdown();
-
 };
 
 animate();
 setInterval(saveGraphToLocalStorage, 1000);
-function populateSessionIdDropdown() {
-  const dropdown = document.getElementById('sessionIdDropdown');
 
-  // Clear the dropdown first
+function populateSessionIdDropdown(): void {
+  const dropdown = document.getElementById('sessionIdDropdown') as HTMLSelectElement;
+
   dropdown.innerHTML = '<option value="">Select a session ID</option>';
 
-  // Iterate over the localStorage keys
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-
-    // Check if the key is a sessionId
-    if (key.startsWith("graphSession")) {
+    if (key && key.startsWith("graphSession")) {
       const option = document.createElement('option');
       option.value = key;
       option.textContent = key;
@@ -1116,50 +1171,46 @@ function populateSessionIdDropdown() {
   }
 }
 
-// Function to handle the selection of a sessionId from the dropdown
-function onSessionIdSelected() {
-  const dropdown = document.getElementById('sessionIdDropdown');
+function onSessionIdSelected(): void {
+  const dropdown = document.getElementById('sessionIdDropdown') as HTMLSelectElement;
   const selectedSessionId = dropdown.value;
   if (selectedSessionId) {
-    // Redirect to the page with the selected sessionId query
-    const currentUrl = window.location.href.split('?')[0]; // Get the current URL without query parameters
+    const currentUrl = window.location.href.split('?')[0];
     window.location.href = `${currentUrl}?sessionId=${selectedSessionId}`;
   }
 }
 
-// Function to save graph to a specified session ID from the input field
-function saveGraphWithInputSessionId() {
-  let sessionIdInput = document.getElementById('sessionIdInput').value;
-  if (sessionIdInput) {
-    if (!sessionIdInput.startsWith("graphSession")){
-      sessionIdInput = "graphSession" + sessionIdInput
+function saveGraphWithInputSessionId(): void {
+  const sessionIdInput = document.getElementById('sessionIdInput') as HTMLInputElement;
+  let sessionIdValue = sessionIdInput.value;
+  if (sessionIdValue) {
+    if (!sessionIdValue.startsWith("graphSession")) {
+      sessionIdValue = "graphSession" + sessionIdValue;
     }
-    saveGraphToLocalStorage(sessionIdInput);
-    alert('Graph saved with session ID: ' + sessionIdInput);
-    const currentUrl = window.location.href.split('?')[0]; // Get the current URL without query parameters
-    window.location.href = `${currentUrl}?sessionId=${sessionIdInput}`;
-    populateSessionIdDropdown(); // Refresh the dropdown after saving
-
+    saveGraphToLocalStorage(sessionIdValue);
+    alert('Graph saved with session ID: ' + sessionIdValue);
+    const currentUrl = window.location.href.split('?')[0];
+    window.location.href = `${currentUrl}?sessionId=${sessionIdValue}`;
+    populateSessionIdDropdown();
   } else {
     alert('Please enter a session ID.');
   }
 }
 
-// Function to save graph to localStorage
-function saveGraphToLocalStorage(sessionIdSpecified = null) {
-  const idToUse = sessionIdSpecified || sessionId; // Use specified sessionId or default
+// Override saveGraphToLocalStorage to include edge dimensions
+function saveGraphToLocalStorageWithDimensions(sessionIdSpecified: string | null = null): void {
+  const idToUse = sessionIdSpecified || sessionId;
   const data = {
-    circles: circles, // Assuming 'circles' is defined somewhere in your script
-    connections: connections, // Assuming 'connections' is defined somewhere in your script
-    edgeDimensions: edgeDimensions, // Save edge dimensions
-    currentEdgeDimensionId: currentEdgeDimension ? currentEdgeDimension.id : null, // Save current dimension ID
+    circles: circles.map(circle => circle.toData()),
+    connections: connections.map(connection => connection.toData()),
+    edgeDimensions: edgeDimensions.map(dim => dim.toData()),
+    currentEdgeDimensionId: currentEdgeDimension ? currentEdgeDimension.id : null,
   };
   const jsonData = JSON.stringify(data);
   localStorage.setItem(idToUse, jsonData);
 }
 
-// Initialize default edge dimension
-function initializeDefaultDimension() {
+function initializeDefaultDimension(): void {
   if (edgeDimensions.length === 0) {
     const defaultDimension = new EdgeDimension("Default", "#000000", true);
     edgeDimensions.push(defaultDimension);
@@ -1167,9 +1218,8 @@ function initializeDefaultDimension() {
   }
 }
 
-// Show edge dimension context menu
-function showEdgeDimensionContextMenu(x, y) {
-  hideEdgeDimensionContextMenu(); // Hide any existing menu
+function showEdgeDimensionContextMenu(x: number, y: number): void {
+  hideEdgeDimensionContextMenu();
 
   const menu = document.createElement('div');
   menu.id = 'edge-dimension-context-menu';
@@ -1185,7 +1235,6 @@ function showEdgeDimensionContextMenu(x, y) {
   menu.style.fontSize = '14px';
   menu.style.minWidth = '200px';
 
-  // Help text
   const helpOption = document.createElement('div');
   helpOption.innerHTML = '<small>Click: Select | Shift+Click: Toggle visibility</small>';
   helpOption.style.padding = '5px 15px';
@@ -1195,7 +1244,6 @@ function showEdgeDimensionContextMenu(x, y) {
   helpOption.style.backgroundColor = '#f9f9f9';
   menu.appendChild(helpOption);
 
-  // Create edge dimension option
   const createOption = document.createElement('div');
   createOption.textContent = 'Create Edge Dimension';
   createOption.style.padding = '8px 15px';
@@ -1209,7 +1257,6 @@ function showEdgeDimensionContextMenu(x, y) {
   });
   menu.appendChild(createOption);
 
-  // Select dimension options
   edgeDimensions.forEach(dimension => {
     const dimensionOption = document.createElement('div');
     const isSelected = dimension === currentEdgeDimension;
@@ -1222,13 +1269,11 @@ function showEdgeDimensionContextMenu(x, y) {
     dimensionOption.style.opacity = dimension.isVisible ? '1.0' : '0.5';
     dimensionOption.addEventListener('mouseenter', () => dimensionOption.style.backgroundColor = '#f0f0f0');
     dimensionOption.addEventListener('mouseleave', () => dimensionOption.style.backgroundColor = 'transparent');
-    dimensionOption.addEventListener('click', (e) => {
+    dimensionOption.addEventListener('click', (e: MouseEvent) => {
       if (e.shiftKey) {
-        // Shift+click toggles visibility
         dimension.isVisible = !dimension.isVisible;
         console.log('Toggled dimension visibility:', dimension.name, 'isVisible:', dimension.isVisible);
       } else {
-        // Regular click selects dimension
         currentEdgeDimension = dimension;
         console.log('Selected dimension:', dimension.name);
       }
@@ -1239,20 +1284,19 @@ function showEdgeDimensionContextMenu(x, y) {
 
   document.body.appendChild(menu);
 
-  // Hide menu when clicking elsewhere
   setTimeout(() => {
     document.addEventListener('click', hideEdgeDimensionContextMenu, { once: true });
   }, 100);
 }
 
-function hideEdgeDimensionContextMenu() {
+function hideEdgeDimensionContextMenu(): void {
   const existingMenu = document.getElementById('edge-dimension-context-menu');
   if (existingMenu) {
     existingMenu.remove();
   }
 }
 
-function createNewEdgeDimension() {
+function createNewEdgeDimension(): void {
   const name = prompt('Enter name for new edge dimension:');
   if (name && name.trim()) {
     const colors = ['#FF0000', '#00FF00', '#0000FF', '#FF00FF', '#FFFF00', '#00FFFF', '#FFA500', '#800080'];
@@ -1263,4 +1307,10 @@ function createNewEdgeDimension() {
   }
 }
 
-// Call the function to populate the dropdown with session IDs on page load
+// Expose functions to global scope for HTML onclick handlers
+(window as any).resetCanvas = resetCanvas;
+(window as any).saveGraph = saveGraph;
+(window as any).loadGraph = loadGraph;
+(window as any).generateRandomCircles = generateRandomCircles;
+(window as any).saveGraphWithInputSessionId = saveGraphWithInputSessionId;
+(window as any).onSessionIdSelected = onSessionIdSelected;

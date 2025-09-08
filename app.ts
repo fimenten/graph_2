@@ -504,6 +504,30 @@ class EdgeDimension {
 // Canvas offset for relative positioning
 let canvasOffsetGlobal: Position = { x: 0, y: 0 };
 
+// Helper function to get accurate mouse coordinates accounting for canvas scaling and borders
+function getMouseCoordinates(event: MouseEvent | Touch): Position {
+  const rect = canvas.getBoundingClientRect();
+  const computedStyle = getComputedStyle(canvas);
+  
+  // Account for border width
+  const borderLeft = parseInt(computedStyle.borderLeftWidth) || 0;
+  const borderTop = parseInt(computedStyle.borderTopWidth) || 0;
+  
+  // Calculate scaling factors between displayed canvas and internal canvas size
+  const scaleX = canvas.width / (rect.width - borderLeft * 2);
+  const scaleY = canvas.height / (rect.height - borderTop * 2);
+  
+  // Get raw mouse position relative to canvas
+  const rawX = event.clientX - rect.left - borderLeft;
+  const rawY = event.clientY - rect.top - borderTop;
+  
+  // Scale to internal canvas coordinates
+  const mouseX = rawX * scaleX;
+  const mouseY = rawY * scaleY;
+  
+  return { x: mouseX, y: mouseY };
+}
+
 class RectangleShape {
   x: number;
   y: number;
@@ -753,9 +777,9 @@ function resetCanvas(): void {
 
 // Event listeners
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
   
   let anyCircle = false;
   for (const circle of circles) {
@@ -892,9 +916,9 @@ Circle.prototype.draw = function (this: Circle): void {
 canvas.addEventListener("contextmenu", (event: MouseEvent) => {
   event.preventDefault();
   event.stopPropagation();
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
 
   let clickedOnCircle = false;
   for (const circle of circles) {
@@ -920,9 +944,9 @@ canvas.addEventListener("contextmenu", (event: MouseEvent) => {
 canvas.addEventListener("click", (event: MouseEvent) => {
   event.preventDefault();
   event.stopPropagation();
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
 
   if (event.shiftKey) {
     for (const circle of circles) {
@@ -951,9 +975,9 @@ canvas.addEventListener("dblclick", (event: MouseEvent) => {
     draggingCircle = null;
     draggingCircle_db = null;
   } else {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
+    const mousePos = getMouseCoordinates(event);
+    const mouseX = mousePos.x;
+    const mouseY = mousePos.y;
     let any = false;
     for (const circle of circles) {
       const dx = mouseX - circle.x;
@@ -968,9 +992,6 @@ canvas.addEventListener("dblclick", (event: MouseEvent) => {
       }
     }
     if (!any) {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
       const circle = new Circle(mouseX, mouseY, "", Date.now().toString());
       const name = prompt('Enter a name for the circle:', circle.name);
       if (name !== null) {
@@ -983,9 +1004,9 @@ canvas.addEventListener("dblclick", (event: MouseEvent) => {
 });
 
 canvas.addEventListener("mousemove", (event: MouseEvent) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
 
   if (draggingCircle) {
     draggingCircle.x = mouseX;
@@ -1019,9 +1040,9 @@ canvas.addEventListener("mousemove", (event: MouseEvent) => {
 
 canvas.addEventListener("mouseup", (event: MouseEvent) => {
   if (draggingCircle_db) {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
+    const mousePos = getMouseCoordinates(event);
+    const mouseX = mousePos.x;
+    const mouseY = mousePos.y;
     let isany = false;
     for (const circle of circles) {
       if (circle !== draggingCircle_db) {
@@ -1094,10 +1115,9 @@ canvas.addEventListener("touchstart", (event: TouchEvent) => {
   const currentTime = new Date().getTime();
   const tapLength = currentTime - lastTapTime;
 
-  const rect = canvas.getBoundingClientRect();
-  const touch = event.touches[0];
-  const mouseX = touch.clientX - rect.left;
-  const mouseY = touch.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event.touches[0]);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
 
   if (tapLength < 300 && tapLength > 0) {
     let any = false;
@@ -1137,10 +1157,9 @@ canvas.addEventListener("touchstart", (event: TouchEvent) => {
 });
 
 canvas.addEventListener("touchmove", (event: TouchEvent) => {
-  const rect = canvas.getBoundingClientRect();
-  const touch = event.touches[0];
-  const mouseX = touch.clientX - rect.left;
-  const mouseY = touch.clientY - rect.top;
+  const mousePos = getMouseCoordinates(event.touches[0]);
+  const mouseX = mousePos.x;
+  const mouseY = mousePos.y;
 
   if (draggingCircle) {
     draggingCircle.x = mouseX;

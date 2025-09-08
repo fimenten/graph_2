@@ -1362,6 +1362,31 @@ function createNewEdgeDimension(): void {
   }
 }
 
+function startNewSession(): void {
+  const confirmation = window.confirm("Start a new session? This will clear the current graph and create a fresh workspace.");
+  if (confirmation) {
+    // Clear current graph state
+    circles.length = 0;
+    connections.length = 0;
+    actionsHistory.length = 0;
+    edgeDimensions.length = 0;
+    currentEdgeDimension = null;
+    
+    // Generate new session ID with graphSession prefix
+    const newSessionId = "graphSession" + generateUUID();
+    
+    // Initialize default dimension for the new session
+    initializeDefaultDimension();
+    
+    // Save empty graph to new session
+    saveGraphToLocalStorage(newSessionId);
+    
+    // Navigate to new session URL
+    const currentUrl = window.location.href.split('?')[0];
+    window.location.href = `${currentUrl}?sessionId=${newSessionId}`;
+  }
+}
+
 // Expose functions to global scope for HTML onclick handlers
 (window as any).resetCanvas = resetCanvas;
 (window as any).saveGraph = saveGraph;
@@ -1369,3 +1394,4 @@ function createNewEdgeDimension(): void {
 (window as any).generateRandomCircles = generateRandomCircles;
 (window as any).saveGraphWithInputSessionId = saveGraphWithInputSessionId;
 (window as any).onSessionIdSelected = onSessionIdSelected;
+(window as any).startNewSession = startNewSession;
